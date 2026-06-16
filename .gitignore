@@ -1,0 +1,6 @@
+.codex-tools/
+codex PR/
+docx_render_check/
+*_hwpx_unpacked/
+__pycache__/
+*.pyc
