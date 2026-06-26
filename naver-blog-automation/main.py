@@ -1,111 +1,135 @@
 """
-네이버 블로그 자동화 메인 실행 파일
-미술교습소 광고형 블로그 글 생성 + 자동 게시
+미술교습소 네이버 블로그 자동화 (API 없는 버전)
+템플릿 기반 글 생성 + 네이버 자동 게시 + 게시물 확인
 """
 
 import asyncio
 import argparse
 import json
 from pathlib import Path
+from datetime import datetime
 
-from content_generator import generate_blog_post, generate_multiple_posts, BLOG_TOPICS
-from naver_blog_poster import post_to_naver
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="미술교습소 네이버 블로그 자동화")
-    subparsers = parser.add_subparsers(dest="command", help="실행 명령")
-
-    # 글 생성만 하기
-    gen = subparsers.add_parser("generate", help="블로그 글 생성 (게시 안함)")
-    gen.add_argument("--topic", choices=list(BLOG_TOPICS.keys()), default="수업소개", help="블로그 주제")
-    gen.add_argument("--detail", default="", help="수업 상세 내용")
-    gen.add_argument("--keywords", nargs="+", help="추가 SEO 키워드")
-    gen.add_argument("--images", nargs="+", help="사진 파일 경로")
-    gen.add_argument("--output", default="output.json", help="결과 저장 파일명")
-
-    # 글 생성 + 게시
-    post = subparsers.add_parser("post", help="블로그 글 생성 후 네이버에 게시")
-    post.add_argument("--topic", choices=list(BLOG_TOPICS.keys()), default="수업소개", help="블로그 주제")
-    post.add_argument("--detail", default="", help="수업 상세 내용")
-    post.add_argument("--keywords", nargs="+", help="추가 SEO 키워드")
-    post.add_argument("--images", nargs="+", help="사진 파일 경로 (여러 개 가능)")
-    post.add_argument("--draft", action="store_true", help="임시저장만 (게시 안함)")
-    post.add_argument("--headless", action="store_true", help="브라우저 숨김 모드")
-
-    # 기존 JSON으로 게시
-    upload = subparsers.add_parser("upload", help="저장된 JSON 파일로 네이버에 게시")
-    upload.add_argument("--file", required=True, help="업로드할 JSON 파일")
-    upload.add_argument("--images", nargs="+", help="사진 파일 경로")
-    upload.add_argument("--draft", action="store_true", help="임시저장만")
-    upload.add_argument("--headless", action="store_true", help="브라우저 숨김 모드")
-
-    # 여러 글 일괄 생성
-    batch = subparsers.add_parser("batch", help="여러 주제로 블로그 글 일괄 생성")
-    batch.add_argument("--count", type=int, default=5, help="생성할 글 수")
-    batch.add_argument("--output-dir", default="batch_output", help="결과 저장 폴더")
-
-    return parser.parse_args()
+from template_generator import generate_blog_post, TOPIC_LIST, TEMPLATES
+from naver_blog_poster import run_post
 
 
-def save_post(post: dict, filename: str):
-    """글 내용을 JSON으로 저장"""
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(post, f, ensure_ascii=False, indent=2)
-    print(f"\n저장 완료: {filename}")
+# ─────────────────────── 출력 헬퍼 ───────────────────────
 
+def print_divider(char="─", width=60):
+    print(char * width)
 
 def print_post_preview(post: dict):
-    """글 미리보기 출력"""
-    print("\n" + "=" * 60)
-    print(f"제목: {post['title']}")
-    print("=" * 60)
-    print(post["content"][:500] + "..." if len(post["content"]) > 500 else post["content"])
-    print("\n태그:", ", ".join(post["tags"][:5]) + f"... 외 {max(0, len(post['tags'])-5)}개")
-    print("=" * 60)
+    print_divider("═")
+    print(f"  제목 : {post['title']}")
+    print(f"  주제 : {post['topic']}")
+    print(f"  태그 : {', '.join(post['tags'][:5])} 외 {max(0, len(post['tags'])-5)}개")
+    print_divider()
+    preview = post["content"][:400].replace("\n", "\n  ")
+    print(f"  {preview}...")
+    print_divider("═")
 
+def save_post(post: dict, path: str):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(post, f, ensure_ascii=False, indent=2)
+    print(f"  저장: {path}")
+
+def print_result(result: dict):
+    print_divider("═")
+    if result.get("posted"):
+        print("  ✅ 게시 완료!")
+    else:
+        print(f"  ❌ 게시 실패: {result.get('error', '알 수 없음')}")
+
+    v = result.get("verified")
+    if v:
+        print_divider()
+        print("  [게시물 확인]")
+        if v.get("success"):
+            print(f"  ✓ 확인 성공!")
+            print(f"  제목 : {v.get('title_found')}")
+            print(f"  URL  : {v.get('url')}")
+        else:
+            print(f"  ⚠ 자동 확인 불가 → 스크린샷 직접 확인 필요")
+            print(f"  블로그: {v.get('blog_url')}")
+        print(f"  📸 스크린샷: {v.get('screenshot')}")
+
+    print_divider("═")
+
+
+# ─────────────────────── 인자 파싱 ───────────────────────
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="미술교습소 네이버 블로그 자동화 (API 없는 버전)",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    sub = parser.add_subparsers(dest="command")
+
+    # ── generate ──
+    g = sub.add_parser("generate", help="블로그 글 생성만 (게시 안함)")
+    g.add_argument("--topic", choices=TOPIC_LIST, default="수업소개", help="주제 선택")
+    g.add_argument("--detail", default="", help="수업 상세 내용")
+    g.add_argument("--tags", nargs="+", help="추가 태그")
+    g.add_argument("--images", nargs="+", help="사진 경로 (위치 표시용)")
+    g.add_argument("--output", default="", help="저장 파일명 (기본: 자동)")
+
+    # ── post ──
+    p = sub.add_parser("post", help="글 생성 + 네이버 게시 + 확인")
+    p.add_argument("--topic", choices=TOPIC_LIST, default="수업소개", help="주제 선택")
+    p.add_argument("--detail", default="", help="수업 상세 내용")
+    p.add_argument("--tags", nargs="+", help="추가 태그")
+    p.add_argument("--images", nargs="+", help="첨부 사진 파일 경로")
+    p.add_argument("--draft", action="store_true", help="임시저장만 (발행 안함)")
+    p.add_argument("--headless", action="store_true", help="브라우저 숨김 모드")
+
+    # ── upload ──
+    u = sub.add_parser("upload", help="저장된 JSON 파일로 게시 + 확인")
+    u.add_argument("--file", required=True, help="게시할 JSON 파일")
+    u.add_argument("--images", nargs="+", help="첨부 사진 파일 경로")
+    u.add_argument("--draft", action="store_true", help="임시저장만")
+    u.add_argument("--headless", action="store_true", help="브라우저 숨김 모드")
+
+    # ── verify ──
+    v = sub.add_parser("verify", help="최근 게시물 확인만")
+    v.add_argument("--title", default="", help="확인할 게시물 제목 (일부)")
+    v.add_argument("--headless", action="store_true", help="브라우저 숨김 모드")
+
+    # ── batch ──
+    b = sub.add_parser("batch", help="여러 주제로 일괄 생성")
+    b.add_argument("--count", type=int, default=5, help="생성할 글 수")
+    b.add_argument("--out-dir", default="batch_output", help="저장 폴더")
+
+    return parser
+
+
+# ─────────────────────── 명령 처리 ───────────────────────
 
 async def cmd_generate(args):
-    """글 생성 명령"""
-    print(f"\n[주제: {args.topic}] 블로그 글 생성 중...\n")
-
-    image_descs = []
-    if args.images:
-        for i, img in enumerate(args.images, 1):
-            image_descs.append(f"사진{i}: {Path(img).name}")
-
+    print(f"\n[{args.topic}] 블로그 글 생성 중...")
     post = generate_blog_post(
         topic_key=args.topic,
         class_detail=args.detail,
-        image_descriptions=image_descs if image_descs else None,
-        custom_keywords=args.keywords,
+        image_paths=args.images,
+        custom_tags=args.tags,
     )
-
     print_post_preview(post)
-    save_post(post, args.output)
-    return post
+
+    fname = args.output or f"post_{args.topic}_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+    save_post(post, fname)
 
 
 async def cmd_post(args):
-    """글 생성 + 게시 명령"""
-    print(f"\n[주제: {args.topic}] 블로그 글 생성 중...\n")
-
-    image_descs = []
-    if args.images:
-        for i, img in enumerate(args.images, 1):
-            image_descs.append(f"사진{i}: {Path(img).name}")
-
+    print(f"\n[{args.topic}] 블로그 글 생성 중...")
     post = generate_blog_post(
         topic_key=args.topic,
         class_detail=args.detail,
-        image_descriptions=image_descs if image_descs else None,
-        custom_keywords=args.keywords,
+        image_paths=args.images,
+        custom_tags=args.tags,
     )
-
     print_post_preview(post)
 
-    print("\n네이버 블로그에 게시 중...")
-    success = await post_to_naver(
+    print("\n네이버 블로그 게시 시작...")
+    result = await run_post(
         title=post["title"],
         content=post["content"],
         tags=post["tags"],
@@ -113,29 +137,26 @@ async def cmd_post(args):
         publish_now=not args.draft,
         headless=args.headless,
     )
+    print_result(result)
 
-    if success:
-        print("\n✅ 블로그 게시 성공!")
-        save_post(post, f"posted_{args.topic}.json")
-    else:
-        print("\n❌ 게시 실패. 생성된 글을 파일로 저장합니다.")
-        save_post(post, f"failed_{args.topic}.json")
+    fname = f"post_{args.topic}_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+    post["result"] = result
+    save_post(post, fname)
 
 
 async def cmd_upload(args):
-    """JSON 파일로 게시 명령"""
-    post_file = Path(args.file)
-    if not post_file.exists():
+    fpath = Path(args.file)
+    if not fpath.exists():
         print(f"파일 없음: {args.file}")
         return
 
-    with open(post_file, encoding="utf-8") as f:
+    with open(fpath, encoding="utf-8") as f:
         post = json.load(f)
 
     print_post_preview(post)
 
-    print("\n네이버 블로그에 게시 중...")
-    success = await post_to_naver(
+    print("\n네이버 블로그 게시 시작...")
+    result = await run_post(
         title=post["title"],
         content=post["content"],
         tags=post.get("tags", []),
@@ -143,36 +164,63 @@ async def cmd_upload(args):
         publish_now=not args.draft,
         headless=args.headless,
     )
+    print_result(result)
 
-    if success:
-        print("\n✅ 블로그 게시 성공!")
-    else:
-        print("\n❌ 게시 실패.")
+
+async def cmd_verify(args):
+    from naver_blog_poster import NaverBlogPoster
+    print("\n게시물 확인 시작...")
+    poster = NaverBlogPoster(headless=args.headless, slow_mo=80)
+    try:
+        await poster.start()
+        if not await poster.login():
+            print("로그인 실패")
+            return
+        result = await poster.verify_post(args.title)
+        print_divider("═")
+        if result["success"]:
+            print("  ✅ 게시물 확인 완료!")
+            print(f"  제목 : {result['title_found']}")
+            print(f"  URL  : {result['url']}")
+        else:
+            print("  ⚠ 자동 확인 불가 → 스크린샷을 직접 확인하세요.")
+            print(f"  블로그: {result['blog_url']}")
+        print(f"  📸 스크린샷: {result['screenshot']}")
+        print_divider("═")
+    finally:
+        await poster.stop()
 
 
 async def cmd_batch(args):
-    """일괄 생성 명령"""
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(exist_ok=True)
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(exist_ok=True)
+    print(f"\n{args.count}개 글 일괄 생성 중...")
 
-    print(f"\n{args.count}개의 블로그 글 일괄 생성 중...\n")
-    posts = generate_multiple_posts(args.count)
+    topics_cycle = TOPIC_LIST * ((args.count // len(TOPIC_LIST)) + 1)
+    posts = []
+    for i in range(args.count):
+        topic = topics_cycle[i]
+        post = generate_blog_post(topic_key=topic)
+        fname = out_dir / f"post_{i+1:02d}_{topic}.json"
+        save_post(post, str(fname))
+        print(f"  [{i+1}/{args.count}] {post['title']}")
+        posts.append(post)
 
-    for i, post in enumerate(posts, 1):
-        filename = output_dir / f"post_{i:02d}.json"
-        save_post(post, str(filename))
+    summary = out_dir / "summary.txt"
+    with open(summary, "w", encoding="utf-8") as f:
+        for i, p in enumerate(posts, 1):
+            f.write(f"{i:02d}. [{p['topic']}] {p['title']}\n")
 
-    print(f"\n✅ {len(posts)}개 글 생성 완료! 저장 위치: {output_dir}/")
+    print(f"\n✅ {len(posts)}개 글 생성 완료")
+    print(f"  폴더: {out_dir}/")
+    print(f"  목록: {summary}")
 
-    summary_file = output_dir / "summary.txt"
-    with open(summary_file, "w", encoding="utf-8") as f:
-        for i, post in enumerate(posts, 1):
-            f.write(f"{i}. {post['title']}\n")
-    print(f"목록 저장: {summary_file}")
 
+# ─────────────────────── 메인 ───────────────────────
 
 async def main():
-    args = parse_args()
+    parser = build_parser()
+    args = parser.parse_args()
 
     if args.command == "generate":
         await cmd_generate(args)
@@ -180,18 +228,24 @@ async def main():
         await cmd_post(args)
     elif args.command == "upload":
         await cmd_upload(args)
+    elif args.command == "verify":
+        await cmd_verify(args)
     elif args.command == "batch":
         await cmd_batch(args)
     else:
-        print("명령을 선택하세요. --help 참고")
-        print("\n[사용 예시]")
-        print("  글 생성만:        python main.py generate --topic 작품전시 --detail '수묵화 수업'")
-        print("  글 생성+게시:     python main.py post --topic 수업소개 --images photo1.jpg photo2.jpg")
-        print("  저장된 글 게시:   python main.py upload --file output.json --images photo1.jpg")
-        print("  일괄 생성:        python main.py batch --count 10")
-        print("\n[지원 주제]")
-        for key, desc in BLOG_TOPICS.items():
-            print(f"  {key}: {desc}")
+        print("\n미술교습소 네이버 블로그 자동화 (API 없는 버전)")
+        print_divider()
+        print("사용법:")
+        print("  글 생성만       : python main.py generate --topic 작품전시 --detail '수묵화 수업'")
+        print("  생성+게시+확인  : python main.py post --topic 수업소개 --images photo1.jpg photo2.jpg")
+        print("  파일로 게시     : python main.py upload --file post_작품전시.json --images photo1.jpg")
+        print("  게시물 확인만   : python main.py verify --title '미술교습소'")
+        print("  일괄 생성       : python main.py batch --count 10")
+        print_divider()
+        print("지원 주제:")
+        for topic in TOPIC_LIST:
+            desc = TEMPLATES[topic]["titles"][0][:25]
+            print(f"  {topic:<8} - {desc}...")
 
 
 if __name__ == "__main__":
