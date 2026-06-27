@@ -452,3 +452,93 @@ calibration_general:
     - Span(스팬) 값 기록
     - 스케일링 공식 적용 확인
     - 교정 이력 문서화
+
+flowmeter_issue:
+  field_terms:
+    - 유량계 통신 안 됨
+    - 유량계 값 이상
+    - 유량계 RS485
+    - 유량계 Modbus
+    - 유량계 안 읽힘
+    - 유량 값 튐
+    - 유량 신호 이상
+    - 전자유량계 이상
+    - 볼텍스유량계 이상
+    - 유량계 영점
+  manual_terms:
+    - Modbus RTU
+    - RS-485
+    - RS485
+    - Station No
+    - Baudrate
+    - Function Code
+    - Register
+    - Flow Rate
+    - 유량
+    - 유량계
+    - 영점
+    - Span
+    - Calibration
+    - Zero
+    - 통신속도
+    - 국번
+  check_items:
+    - 통신 방식(Modbus RTU / RS-485) 및 국번 확인
+    - 통신속도(Baudrate) 마스터/슬레이브 일치 확인
+    - 패리티(Parity) 및 스톱비트(Stop Bit) 설정 확인
+    - 레지스터 주소 및 기능코드(Function Code) 확인
+    - 유량계 영점(Zero) 및 스팬(Span) 보정 상태 확인
+    - 배관 내 유체 충만 여부 확인 (전자식)
+    - 배선 단선 및 RS-485 A/B 극성 확인
+
+inverter_speed_no_change:
+  field_terms:
+    - 속도 안 올라감
+    - 주파수 안 올라감
+    - 출력 주파수 고정
+    - 인버터 출력 안 나옴
+    - 최고속도 안 나옴
+    - 상한 주파수 걸림
+    - 주파수 제한됨
+  manual_terms:
+    - Maximum Frequency
+    - Upper Limit
+    - Frequency Limit
+    - Output Frequency
+    - Run Frequency
+    - 최대 주파수
+    - 상한 주파수
+    - 주파수 상한
+    - 출력 주파수
+    - V/F Pattern
+    - Boost
+  check_items:
+    - 최대 주파수(Maximum Frequency) 파라미터 확인
+    - 상한 주파수(Frequency Upper Limit) 설정 확인
+    - V/F 패턴 설정 확인
+    - 출력 주파수 모니터링 화면 확인
+    - 외부 속도 지령 입력(4-20mA / 0-10V) 확인
+
+plc_scan_slow:
+  field_terms:
+    - PLC 스캔 느림
+    - 스캔 타임 길어짐
+    - PLC 응답 느림
+    - 인터럭 지연
+    - 시퀀스 지연
+  manual_terms:
+    - Scan Time
+    - Cycle Time
+    - Watchdog
+    - Interrupt
+    - Task
+    - Program Size
+    - I/O Refresh
+    - 스캔타임
+    - 워치독
+  check_items:
+    - 스캔 타임 모니터링 (프로그래밍 툴 → 진단 → 스캔 타임)
+    - 루프 내 Wait/Delay 명령 과다 사용 여부 확인
+    - 통신 갱신 주기 및 대상 축소 검토
+    - 프로그램 크기 및 FOR-NEXT 루프 처리량 확인
+    - 인터럽트 태스크 과다 발생 여부 확인
