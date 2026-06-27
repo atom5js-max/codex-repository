@@ -132,16 +132,25 @@ python main.py "속도 안 먹음" --verbose
 |-------------|---------|
 | `S300 속도지령 안 먹음` | speed_command_problem |
 | `인버터 주파수 안 바뀜` | speed_command_problem |
+| `상한 주파수 걸림` | inverter_speed_no_change |
+| `최고속도 안 나옴` | inverter_speed_no_change |
+| `인버터 OC 트립` | inverter_trip |
+| `인버터 가속 안 됨` | inverter_accel_problem |
 | `로드셀 값 튐` | loadcell_noise |
 | `무부하 값 흔들림` | loadcell_noise |
 | `Modbus 통신 안 됨` | modbus_comm_problem |
-| `인버터 485 에러` | modbus_comm_problem |
-| `LabVIEW DB 저장 느림` | labview_db_slow |
-| `데이터 누락` | labview_db_slow |
-| `전력량계 펄스 계산` | power_meter_pulse |
+| `HMI 통신 안 됨` | hmi_comm_problem |
+| `유량계 RS485` | flowmeter_issue |
+| `유량계 통신 안 됨` | flowmeter_issue |
 | `PLC 아날로그 값 이상` | analog_input_issue |
-| `인버터 OC 트립` | inverter_trip |
+| `압력 센서 이상` | pressure_sensor_issue |
+| `온도 값 이상` / `PT100 이상` | temperature_sensor_issue |
 | `DI 신호 안 읽힘` | plc_io_check |
+| `PLC 에러` / `스캔 타임 이상` | plc_program_error |
+| `PLC 스캔 느림` | plc_scan_slow |
+| `LabVIEW DB 저장 느림` | labview_db_slow |
+| `전력량계 펄스 계산` | power_meter_pulse |
+| `영점 조정` / `캘리브레이션` | calibration_general |
 
 ---
 

@@ -1,11 +1,13 @@
 # 필수 의존성
 PyYAML>=6.0
 
-# PDF 텍스트 추출 (둘 중 하나 이상 설치)
-pdfplumber>=0.10.0    # 권장: 표·레이아웃 인식 우수
-# pypdf>=4.0.0        # 대체: pdfplumber 설치 어려울 때
+# PDF 텍스트 추출 — 하나 이상 설치
+# 권장: 표·레이아웃 인식 우수 (cryptography 패키지 필요)
+pdfplumber>=0.10.0
+# 대체: 가벼운 환경이나 pdfplumber 설치 어려울 때
+# pypdf>=4.0.0
 
-# 나중에 벡터 검색 추가 시 사용할 라이브러리 (현재 불필요)
+# Stage B: 벡터 검색 추가 시 (현재 불필요)
 # sentence-transformers>=2.7.0
 # faiss-cpu>=1.8.0
 # chromadb>=0.5.0
