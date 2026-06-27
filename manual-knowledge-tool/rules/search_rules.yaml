@@ -23,6 +23,10 @@ search:
   # 확장 검색어 매칭 점수 (원본 매칭 = 1.0 기준 상대값)
   expanded_match_weight: 0.7
 
+  # 단어 경계(\b) 매칭을 적용할 최대 용어 길이
+  # 이 길이 이하의 영문/숫자 용어는 부분 매칭 방지 (DB→Modbus 오매칭 방지)
+  whole_word_threshold: 4
+
   # 동일 파일에서 최대 표시 결과 수
   max_results_per_file: 5
 

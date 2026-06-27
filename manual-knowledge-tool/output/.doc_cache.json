@@ -1,0 +1,1933 @@
+{
+  "version": 1,
+  "files": {
+    "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md": {
+      "file_path": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md",
+      "category": "database",
+      "file_type": "md",
+      "mtime": 1782572179.4100842,
+      "chunks": [
+        {
+          "text": "# SQL Server / MariaDB LabVIEW 연동 가이드",
+          "chunk_index": 0,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "## 1. 연결 문자열 (Connection String)\n### SQL Server (로컬)",
+          "chunk_index": 1,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```\nProvider=SQLOLEDB;Data Source=.\\SQLEXPRESS;Initial Catalog=측정DB;\nIntegrated Security=SSPI;Connection Timeout=30;\n```\n### SQL Server (원격)",
+          "chunk_index": 2,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```\nProvider=SQLOLEDB;Data Source=192.168.1.100\\SQLEXPRESS;\nInitial Catalog=측정DB;User ID=sa;Password=yourpass;\nConnection Timeout=30;Command Timeout=60;\n```\n### MariaDB / MySQL",
+          "chunk_index": 3,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```\nDriver={MariaDB ODBC 3.1 Driver};Server=localhost;Port=3306;\nDatabase=sensor_db;User=labview;Password=yourpass;Option=3;\n```\n---",
+          "chunk_index": 4,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "## 2. 테이블 설계 (측정 데이터 로깅)\n### 기본 측정 테이블",
+          "chunk_index": 5,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```sql\nCREATE TABLE sensor_log (\n    id          BIGINT IDENTITY(1,1) PRIMARY KEY,\n    log_time    DATETIME2(3) NOT NULL DEFAULT GETDATE(),\n    tag_name    NVARCHAR(50) NOT NULL,\n    value       FLOAT,\n    unit        NVARCHAR(20),\n    quality     TINYINT DEFAULT 1   -- 1=Good, 0=Bad\n);",
+          "chunk_index": 6,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "CREATE INDEX ix_sensor_log_time ON sensor_log (log_time);\nCREATE INDEX ix_sensor_log_tag  ON sensor_log (tag_name, log_time);\n```\n### 이벤트/알람 테이블",
+          "chunk_index": 7,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```sql\nCREATE TABLE event_log (\n    id          BIGINT IDENTITY(1,1) PRIMARY KEY,\n    event_time  DATETIME2(3) NOT NULL DEFAULT GETDATE(),\n    event_type  NVARCHAR(20),  -- 'ALARM', 'WARNING', 'INFO'\n    description NVARCHAR(200),\n    value       FLOAT\n);\n```\n---",
+          "chunk_index": 8,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "## 3. Prepared Statement 예시 (LabVIEW ADO)",
+          "chunk_index": 9,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "### LabVIEW 에서 Prepare → Execute 순서",
+          "chunk_index": 10,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```\n[초기화 (루프 밖)]\n  DB Open Connection → connection reference\n  DB Tools Prepare Statement.vi\n    SQL: \"INSERT INTO sensor_log (log_time, tag_name, value) VALUES (?, ?, ?)\"\n    → statement reference",
+          "chunk_index": 11,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "[루프 안]\n  DB Tools Set Prepared Parameters.vi\n    parameters: [현재시간, 태그명, 측정값]\n  DB Tools Execute Prepared Statement.vi",
+          "chunk_index": 12,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "[종료 (루프 밖)]\n  DB Tools Destroy Statement.vi\n  DB Close Connection.vi\n```\n---",
+          "chunk_index": 13,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "## 4. Transaction 처리",
+          "chunk_index": 14,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "### 단건 Insert vs Transaction 묶음",
+          "chunk_index": 15,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "| 방식 | Insert 100건 소요 시간 (참고값) |\n|-----|--------------------------|\n| 단건 Auto-commit | ~5,000 ms |\n| Transaction 100건 일괄 | ~50 ms |",
+          "chunk_index": 16,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "### LabVIEW Transaction 구현",
+          "chunk_index": 17,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```\nDB Begin Transaction.vi → transaction reference",
+          "chunk_index": 18,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "[루프: 100번 반복]\n  DB Tools Execute Prepared Statement.vi",
+          "chunk_index": 19,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "DB Commit Transaction.vi   ← 100건 한꺼번에 디스크에 기록\n```",
+          "chunk_index": 20,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "Transaction 중 에러 발생 시:\n```\nDB Rollback Transaction.vi   ← 전체 취소\n```\n---\n## 5. 성능 최적화\n### Connection Pool",
+          "chunk_index": 21,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "SQL Server 드라이버는 기본적으로 Connection Pooling 을 지원한다.\n동일 Connection String 으로 열고 닫으면 물리적 연결을 재사용해 오버헤드를 줄인다.\n### 인덱스 관리",
+          "chunk_index": 22,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```sql\n-- 느린 쿼리 확인\nSELECT TOP 10 total_elapsed_time/execution_count AS avg_ms,\n       total_logical_reads/execution_count AS avg_reads,\n       SUBSTRING(st.text, 1, 200) AS query_text\nFROM sys.dm_exec_query_stats qs\nCROSS APPLY sys.dm_exec_sql_text(sql_handle) st\nORDER BY avg_ms DESC;\n```\n### 데이터 보관 정책",
+          "chunk_index": 23,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```sql\n-- 3개월 이전 데이터 삭제 (정기 실행)\nDELETE FROM sensor_log\nWHERE log_time < DATEADD(MONTH, -3, GETDATE());\n```\n---\n## 6. 연결 에러 대처",
+          "chunk_index": 24,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "| 에러 코드 | 원인 | 확인 항목 |\n|---------|------|---------|\n| -2147467259 | DB 연결 실패 | 서버 주소, 포트, 방화벽 |\n| -2147217900 | SQL 문법 오류 | 쿼리 문자열 확인 |\n| -2147217887 | 제약 조건 위반 | 중복 키, NOT NULL 열 |\n| Timeout | 쿼리 실행 초과 | Command Timeout 값 증가, 인덱스 확인 |",
+          "chunk_index": 25,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "### LabVIEW Error Cluster 처리",
+          "chunk_index": 26,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "```\nDB Tools Execute.vi ──→ error out ──→ Simple Error Handler.vi\n                                       (에러 코드 + 메시지 로깅)\n```",
+          "chunk_index": 27,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        },
+        {
+          "text": "Error Cluster 를 처리하지 않으면 에러 발생 시 VI 가 정지해 데이터 누락이 발생한다.",
+          "chunk_index": 28,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/database/sql_server_labview_guide.md"
+          }
+        }
+      ]
+    },
+    "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md": {
+      "file_path": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md",
+      "category": "instruments",
+      "file_type": "md",
+      "mtime": 1782572156.4140847,
+      "chunks": [
+        {
+          "text": "# 계측기 운용 가이드: 전력량계·압력·온도 트랜스미터",
+          "chunk_index": 0,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "## 1. 전력량계 (Power Meter)",
+          "chunk_index": 1,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "### 펄스 출력 (Pulse Output)",
+          "chunk_index": 2,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "전력량계는 소비 전력에 비례해 펄스를 출력한다.",
+          "chunk_index": 3,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "| 항목 | 내용 |\n|-----|------|\n| 출력 형태 | 오픈컬렉터 (NPN 또는 PNP 선택) |\n| 펄스 레이트 | 1000 pulse/kWh (기종마다 다름) |\n| 펄스 폭(Pulse Width) | 60 ms 이상 (DI 입력 응답 속도 이상) |\n| 전원 | DC 12~24 V (외부 공급) |",
+          "chunk_index": 4,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "**전력량 계산식**:\n```\nE [kWh] = 누적 펄스 수 / 펄스 레이트 [pulse/kWh]\n```\n### PLC 연결 시 주의사항",
+          "chunk_index": 5,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "- 펄스 폭이 PLC DI 입력 필터 설정보다 짧으면 누락 발생\n  → PLC DI 입력 필터를 펄스 폭 이하로 설정하거나 고속카운터(HSC) 사용\n- 오픈컬렉터 출력: 외부 풀업 저항 또는 소스형 입력 모듈 필요\n- 계측기 펄스 레이트는 반드시 데이터시트에서 확인 (100/500/1000/10000 pulse/kWh 다양)",
+          "chunk_index": 6,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "### 통신 인터페이스 (Modbus RTU / TCP)",
+          "chunk_index": 7,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "대부분의 전력량계는 Modbus RTU 또는 Modbus TCP 를 지원한다.",
+          "chunk_index": 8,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "주요 레지스터 (제조사별 상이, 반드시 사양서 확인):",
+          "chunk_index": 9,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "| 데이터 | 레지스터 타입 |\n|------|------------|\n| 유효 전력 (kW) | Holding Register (FC03) |\n| 무효 전력 (kVAR) | Holding Register |\n| 적산 전력량 (kWh) | Holding Register (32bit, 2 레지스터) |\n| 전류 (A) | Holding Register |\n| 전압 (V) | Holding Register |\n| 역률 (PF) | Holding Register |\n---",
+          "chunk_index": 10,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "## 2. 압력 트랜스미터 (Pressure Transmitter)\n### 출력 신호 유형",
+          "chunk_index": 11,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "| 유형 | 범위 | 특징 |\n|-----|------|------|\n| 4-20 mA | 2선식/3선식 | 가장 일반적, 장거리 전송 유리 |\n| 0-10 V | 3선식 | 단거리, 임피던스 주의 |\n| HART | 4-20 mA 위에 디지털 중첩 | 파라미터 설정 가능 |\n### 4-20 mA 배선",
+          "chunk_index": 12,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "```\n[24V 공급] ──┬── [+] 트랜스미터 [─] ── [PLC AI+]\n             │                          [PLC AI-] ── [0V]\n             └─────────────────────────────────────\n```",
+          "chunk_index": 13,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "2선식: 루프 파워(Loop Power) 방식 — 전원과 신호가 같은 2선",
+          "chunk_index": 14,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "**스케일링 공식**:\n```\n압력 = (mA - 4) / 16 × 정격 압력 [kPa 또는 bar]\n```",
+          "chunk_index": 15,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "### 배선 단선(Wire Break) 감지",
+          "chunk_index": 16,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "PLC AI 모듈에서 Burnout 기능을 활성화하면 단선 시 count 가 최대 또는 최소로 고정된다.\n프로그램에서 이 조건을 체크해 알람을 발생시킨다.\n### 영점/스팬 조정",
+          "chunk_index": 17,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "- 영점(Zero): 대기압(0 kPa) 상태에서 4.00 mA 출력 확인\n- 스팬(Span): 정격 압력 인가 후 20.00 mA 출력 확인\n- 현장 Trim: HART 통신기 또는 조정 스위치로 보정\n---",
+          "chunk_index": 18,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "## 3. 온도 트랜스미터 (Temperature Transmitter)\n### 센서 유형",
+          "chunk_index": 19,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "| 센서 | 기호 | 범위 | 특징 |\n|-----|-----|------|------|\n| PT100 | RTD | -200~+850°C | 정확도 높음 |\n| PT1000 | RTD | -200~+850°C | PT100 고저항 버전 |\n| K 타입 | TC | -200~+1370°C | 고온용 일반적 |\n| J 타입 | TC | -40~+750°C | 저비용 |",
+          "chunk_index": 20,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "### 트랜스미터 배선 (4-20 mA 출력)",
+          "chunk_index": 21,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "RTD 3선식 배선 시 보상 도선 저항 오차 주의.\n트랜스미터가 없는 경우 PLC 전용 TC/RTD 모듈 직결 가능.\n### 온도 Calibration",
+          "chunk_index": 22,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "1. 기준 온도계와 비교 측정\n2. 영점(냉접점 보상) 확인\n3. 스팬 조정 (고온 기준점 적용)\n---",
+          "chunk_index": 23,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "## 4. 공통: 아날로그 신호 노이즈 대책",
+          "chunk_index": 24,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        },
+        {
+          "text": "- 쉴드 케이블 사용 → 한쪽(PLC 판넬)만 접지\n- 인버터 출력 케이블과 30 cm 이상 이격\n- 덕트 내 동력/신호 케이블 분리 배선\n- PLC AI 모듈 디지털 필터 설정 (50~200 ms)\n- 심한 노이즈 환경: 격리형(Isolated) AI 모듈 사용 검토",
+          "chunk_index": 25,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/instruments/power_meter_transmitter_guide.md"
+          }
+        }
+      ]
+    },
+    "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md": {
+      "file_path": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md",
+      "category": "inverter",
+      "file_type": "md",
+      "mtime": 1782551697.8073626,
+      "chunks": [
+        {
+          "text": "# LS S300 인버터 빠른 참조 매뉴얼",
+          "chunk_index": 0,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "## 1. 주파수지령 (Frequency Reference) 설정",
+          "chunk_index": 1,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "### Command Source 파라미터 (DRV-05)",
+          "chunk_index": 2,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "주파수지령 소스를 결정하는 파라미터.",
+          "chunk_index": 3,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "| 설정값 | 의미 |\n|--------|------|\n| 0 | Keypad (조작패널) |\n| 1 | V1 단자 (0-10V) |\n| 2 | I 단자 (4-20mA) |\n| 3 | RS-485 Communication |\n| 4 | 다단속 (Multi-Step Speed) |",
+          "chunk_index": 4,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "**Speed Command 를 RS-485(Modbus)로 받으려면 DRV-05 = 3 으로 설정해야 한다.**\n---",
+          "chunk_index": 5,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "## 2. 운전지령 (Run Command) 설정",
+          "chunk_index": 6,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "### DRV-06: Run Command Source",
+          "chunk_index": 7,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "| 설정값 | 의미 |\n|--------|------|\n| 0 | Keypad |\n| 1 | FX/RX 단자 (디지털 입력) |\n| 2 | RS-485 Communication |",
+          "chunk_index": 8,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "Speed Command 와 Run Command 소스는 **별도 파라미터**이므로 둘 다 확인해야 한다.\n---",
+          "chunk_index": 9,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "## 3. Modbus RTU 통신 설정\n### COM 파라미터 그룹",
+          "chunk_index": 10,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "| 파라미터 | 기능 | 기본값 |\n|---------|------|--------|\n| COM-01 | Station No (국번) | 1 |\n| COM-02 | Baudrate (통신속도) | 9600 |\n| COM-03 | Parity (패리티) | None (0) |\n| COM-04 | Stop Bit | 1 |\n| COM-05 | Response Delay | 5 ms |",
+          "chunk_index": 11,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "Baudrate 설정값: 1200 / 2400 / 4800 / 9600 / 19200 / 38400 / 57600 / 115200\n---",
+          "chunk_index": 12,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "## 4. 주요 Modbus 레지스터 (Function Code 03/06)",
+          "chunk_index": 13,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "| 레지스터 | 기능 | 접근 |\n|---------|------|------|\n| 0x0001 | Run Command | Read/Write |\n| 0x0002 | Frequency Reference (단위: 0.01 Hz) | Read/Write |\n| 0x000C | Inverter Status | Read Only |\n| 0x000D | Output Frequency | Read Only |\n| 0x000E | Output Current (단위: 0.1A) | Read Only |\n| 0x000F | Output Voltage | Read Only |\n| 0x0010 | DC Link Voltage | Read Only |",
+          "chunk_index": 14,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "주파수지령 레지스터에 3000 을 Write하면 30.00 Hz 지령이다.\n---",
+          "chunk_index": 15,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "## 5. 트립/폴트 (Trip / Fault)\n### 주요 Fault Code",
+          "chunk_index": 16,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "| 코드 | 이름 | 원인 |\n|-----|------|------|\n| OC | Overcurrent (과전류) | 부하 과다, 가감속 너무 빠름, 모터 단락 |\n| OV | Overvoltage (과전압) | 감속 너무 빠름, 회생에너지 과다 |\n| UV | Undervoltage (저전압) | 전원 불안정 |\n| OH | Overheat (과열) | 주변 온도 높음, 환기 불량 |\n| GF | Ground Fault (지락) | 모터 또는 케이블 지락 |",
+          "chunk_index": 17,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "**Fault History**: 마지막 5개 트립 이력을 TRP-xx 파라미터에서 확인 가능.\n---\n## 6. 가감속 시간 설정",
+          "chunk_index": 18,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "| 파라미터 | 기능 | 단위 |\n|---------|------|------|\n| BAS-09 | Acceleration Time (가속 시간) | 초 (s) |\n| BAS-10 | Deceleration Time (감속 시간) | 초 (s) |",
+          "chunk_index": 19,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "과전압(OV) 트립 시 Deceleration Time 을 늘리는 것을 검토한다.\n---",
+          "chunk_index": 20,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "## 7. 아날로그 입력 (Analog Input)",
+          "chunk_index": 21,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "V1 단자: 0-10V 입력  \nI 단자: 4-20mA 입력",
+          "chunk_index": 22,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "Analog Input 입력 범위와 주파수 범위는 IN 파라미터 그룹에서 설정한다.\n---",
+          "chunk_index": 23,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "## 8. RS-485 배선 주의사항",
+          "chunk_index": 24,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        },
+        {
+          "text": "- RS-485 A(+) / B(-) 극성 정확히 확인\n- 버스 양 끝단에 종단저항 120Ω 설치\n- 데이지체인(직렬) 연결, T-분기 금지\n- 쉴드 케이블 사용, 한쪽만 접지\n- Station No(국번) 중복 금지",
+          "chunk_index": 25,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/inverter/LS_S300_quick_reference.md"
+          }
+        }
+      ]
+    },
+    "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md": {
+      "file_path": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md",
+      "category": "labview",
+      "file_type": "md",
+      "mtime": 1782551751.8313658,
+      "chunks": [
+        {
+          "text": "# LabVIEW 데이터베이스 연동 패턴",
+          "chunk_index": 0,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "## 1. Producer-Consumer 패턴 (데이터 수집 + DB 저장)",
+          "chunk_index": 1,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "데이터 수집 속도와 DB Insert 속도가 다를 때 Queue를 버퍼로 사용한다.",
+          "chunk_index": 2,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "```\n[Producer Loop] → Queue → [Consumer Loop]\n  100 ms 수집        1000개      500 ms Insert\n```",
+          "chunk_index": 3,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "**Queue 설정**:\n- 크기: 예상 지연 시간 동안 누적될 데이터 수 × 1.5 이상\n- Queue 가 꽉 차면(Enqueue Timeout) 데이터 누락 발생\n- Queue 누적량을 주기적으로 모니터링해 DB 성능 지표로 활용\n---\n## 2. DB 연결 관리\n### 잘못된 패턴 (성능 저하)",
+          "chunk_index": 4,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "```\n[루프 시작]\n  DB Open Connection   ← 루프마다 연결\n  Execute SQL Insert\n  DB Close Connection  ← 루프마다 종료\n[루프 반복]\n```",
+          "chunk_index": 5,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "루프마다 연결/종료를 반복하면 연결 오버헤드가 누적되어 Insert 지연이 발생한다.\n### 올바른 패턴 (권장)",
+          "chunk_index": 6,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "```\n[초기화]\n  DB Open Connection   ← 1회만 연결",
+          "chunk_index": 7,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "[루프]\n  Prepare Statement    ← 루프 밖에 위치\n  Execute Prepared     ← 파라미터만 교체",
+          "chunk_index": 8,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "[종료]\n  DB Close Connection  ← 1회만 종료\n```\n---",
+          "chunk_index": 9,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "## 3. Prepared Statement 사용법",
+          "chunk_index": 10,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "Prepared Statement 는 쿼리를 한 번만 파싱하고 파라미터만 교체해 실행하므로\n매번 Execute SQL 하는 것보다 훨씬 빠르다.",
+          "chunk_index": 11,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "**위치 규칙**:\n- `DB Tools Prepare Statement.vi` → **루프 밖** (초기화 구간)\n- `DB Tools Execute Prepared Statement.vi` → **루프 안** (반복 구간)\n- `DB Tools Destroy Statement.vi` → **루프 밖** (종료 구간)\n---",
+          "chunk_index": 12,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "## 4. Transaction (일괄 커밋)",
+          "chunk_index": 13,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "개별 Insert 마다 자동 커밋(Auto-commit)되면 Disk I/O 가 자주 발생해 느리다.\nTransaction 으로 묶어서 한 번에 커밋하면 성능이 크게 향상된다.",
+          "chunk_index": 14,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "```\nDB Begin Transaction\n  [루프: N번 Insert]\nDB Commit Transaction   ← N건 한꺼번에 커밋\n```",
+          "chunk_index": 15,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "권장 Transaction 크기: 50~200건 (DB 서버 성능과 수집 주기에 따라 조정)\n---",
+          "chunk_index": 16,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "## 5. Timeout 및 Error Cluster 처리\n### 연결 Timeout",
+          "chunk_index": 17,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "DB Server 가 원격(네트워크)인 경우 Timeout 값을 충분히 설정한다.",
+          "chunk_index": 18,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "- Connection String 의 `Connection Timeout` 파라미터\n- `Command Timeout` (쿼리 실행 제한 시간)",
+          "chunk_index": 19,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "### Error Cluster 확인",
+          "chunk_index": 20,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "Error Cluster 를 반드시 처리해야 에러 발생 시 VI 가 멈추지 않는다.\nSimple Error Handler 또는 General Error Handler 로 에러 코드와 메시지를 기록한다.",
+          "chunk_index": 21,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "**Error Code -2147467259**: DB 연결 실패 (Connection String 또는 DB 서버 확인)  \n**Error Code -2147217900**: SQL 문법 오류  \n**Error Code -2147217887**: 제약 조건 위반 (중복 키 등)\n---",
+          "chunk_index": 22,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "## 6. DB Insert 성능 참고값",
+          "chunk_index": 23,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "| 방식 | 대략적 속도 |\n|-----|-----------|\n| 매 루프 Open/Close + Execute SQL | 100~500 ms/건 |\n| 연결 유지 + Execute SQL | 10~50 ms/건 |\n| 연결 유지 + Prepared Statement | 1~10 ms/건 |\n| 연결 유지 + Prepared + Transaction(100건) | 0.1~1 ms/건 |",
+          "chunk_index": 24,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        },
+        {
+          "text": "100 ms 수집 주기라면 Prepared + Transaction 방식을 사용해야 누락 없이 저장 가능하다.",
+          "chunk_index": 25,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/labview/labview_db_patterns.md"
+          }
+        }
+      ]
+    },
+    "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md": {
+      "file_path": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md",
+      "category": "loadcell",
+      "file_type": "md",
+      "mtime": 1782551776.2913673,
+      "chunks": [
+        {
+          "text": "# 로드셀 / 장력센서 증폭기 설정 가이드\n## 1. 로드셀 기본 구조",
+          "chunk_index": 0,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "로드셀은 하중에 비례한 mV/V 신호를 출력한다.",
+          "chunk_index": 1,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "```\n정격 출력 = 2 mV/V (예)\n공급전압 = 5V\n만부하 시 출력 = 2 × 5 = 10 mV\n```",
+          "chunk_index": 2,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "증폭기는 이 mV 신호를 4-20 mA 또는 0-10 V 로 변환한다.\n---\n## 2. 증폭기 출력 확인 방법\n### 무부하 출력 (Zero)",
+          "chunk_index": 3,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "- 로드셀에 아무것도 올리지 않은 상태에서 증폭기 출력 측정\n- 정상: 4.00 mA ±0.1 mA (4-20 mA 출력 기준)\n- 무부하에서 4 mA 를 벗어나면 Zero 조정 또는 배선 확인\n### 만부하 출력 (Span)",
+          "chunk_index": 4,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "- 정격 분동을 올린 상태에서 증폭기 출력 측정\n- 정상: 20.00 mA ±0.2 mA\n- 실제값과 차이나면 Calibration (Span 조정) 필요\n---",
+          "chunk_index": 5,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "## 3. 노이즈 (Noise) 대책\n### 원인",
+          "chunk_index": 6,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "- 인버터 PWM 노이즈가 신호 케이블에 유도됨\n- Ground Loop: 쉴드 케이블 양쪽 접지 시 순환 전류 발생\n- 기계 진동이 로드셀에 전달\n### 대책",
+          "chunk_index": 7,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "**Shield (쉴드) 접지**:\n- 쉴드는 한쪽(PLC 판넬 측)만 접지\n- 반대쪽(로드셀/증폭기 측)은 절연 처리\n- Ground Loop 형성을 방지하기 위해",
+          "chunk_index": 8,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "**Filter 상수**:\n- 증폭기 내장 Low-Pass Filter 상수를 늘려 고주파 노이즈 제거\n- 일반적으로 50~200 ms 설정 (응답속도와 안정성 트레이드오프)",
+          "chunk_index": 9,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "**케이블 배선**:\n- 동력 케이블(인버터 출력)과 최소 30 cm 이격\n- 교차 시 직각 교차",
+          "chunk_index": 10,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "**Analog Input 필터**:\n- PLC AI 모듈의 디지털 필터 상수 설정\n- XGB 기준: 채널별 필터 시정수 설정 가능\n---",
+          "chunk_index": 11,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "## 4. Calibration (교정) 절차",
+          "chunk_index": 12,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "1. 설비 안정화 (무부하 상태로 5분 이상 대기)\n2. 로드셀 무부하 출력(mV/V) 측정 및 기록\n3. PLC AI count 읽기 (이것이 Zero 기준값)\n4. 기준 분동 적재 (정격의 80% 이상 권장)\n5. 분동 적재 시 AI count 읽기 (이것이 Span 기준값)\n6. 스케일링 파라미터 입력",
+          "chunk_index": 13,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "**스케일링 공식**:\n```\n공학값(kgf) = (count - zero_count) / (span_count - zero_count) × 정격용량\n```\n---",
+          "chunk_index": 14,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "## 5. Offset (오프셋) 조정",
+          "chunk_index": 15,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "설치 후 구조물 자중이나 편심으로 인해 무부하에서 영점이 맞지 않을 수 있다.\n증폭기의 Zero 조정 포텐셔미터 또는 소프트웨어 Offset 설정으로 보정한다.",
+          "chunk_index": 16,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "PLC 프로그램에서 소프트 오프셋 처리:\n```\n실제값 = 측정값 - 오프셋\n```\n---\n## 6. 배선 점검 체크리스트",
+          "chunk_index": 17,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        },
+        {
+          "text": "- [ ] 로드셀 케이블 색상 확인 (EX+/EX-/SIG+/SIG-)\n- [ ] 쉴드 한쪽 접지 여부\n- [ ] 증폭기 공급전압 확인 (5V 또는 10V, 사양서 확인)\n- [ ] 증폭기 출력 형태 (4-20 mA / 0-10 V)\n- [ ] PLC AI 모듈 입력 범위 설정 일치 여부\n- [ ] 케이블 단선 여부 (테스터기로 저항 측정)\n- [ ] 동력 케이블과의 이격 거리",
+          "chunk_index": 18,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/loadcell/loadcell_amplifier_guide.md"
+          }
+        }
+      ]
+    },
+    "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md": {
+      "file_path": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md",
+      "category": "plc",
+      "file_type": "md",
+      "mtime": 1782551725.3953643,
+      "chunks": [
+        {
+          "text": "# LS XGB PLC Modbus RTU 마스터 설정 가이드",
+          "chunk_index": 0,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "## 1. Modbus RTU 통신 개요",
+          "chunk_index": 1,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "XGB PLC 는 내장 RS-485 포트 또는 통신 모듈을 통해 Modbus RTU 마스터로 동작한다.",
+          "chunk_index": 2,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "**지원 Function Code**:\n- FC 01: Read Coil Status\n- FC 02: Read Input Status\n- FC 03: Read Holding Registers\n- FC 04: Read Input Registers\n- FC 06: Write Single Register\n- FC 16: Write Multiple Registers\n---\n## 2. 통신 파라미터 설정\nXG5000 소프트웨어에서 설정:",
+          "chunk_index": 3,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "| 항목 | 설정 위치 | 일반 설정값 |\n|-----|---------|------------|\n| Baudrate | 통신 파라미터 | 9600 bps |\n| Parity | 통신 파라미터 | None |\n| Stop Bit | 통신 파라미터 | 1 |\n| Timeout | 통신 파라미터 | 200 ms |\n| Station No | 슬레이브 장치 설정 | 1~247 |\n---",
+          "chunk_index": 4,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "## 3. Modbus 명령 블록 (MBUS_RD / MBUS_WR)",
+          "chunk_index": 5,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "XGB 래더 프로그램에서 Modbus 통신을 위해 MBUS_RD, MBUS_WR 펑션블록 사용.",
+          "chunk_index": 6,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "### MBUS_RD (Read Holding Registers, FC 03)",
+          "chunk_index": 7,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "```\nMBUS_RD\n  EN      : 실행 트리거\n  PORT    : COM 포트 번호\n  SLAVE   : 슬레이브 국번 (1~247)\n  FUNC    : Function Code (3 = Read Holding Registers)\n  ADDR    : 시작 레지스터 주소\n  CNT     : 읽을 레지스터 수\n  DATA    : 수신 데이터 저장 주소\n  DONE    : 완료 비트\n  ERR     : 에러 비트\n  ERRCODE : 에러 코드\n```",
+          "chunk_index": 8,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "### MBUS_WR (Write Single Register, FC 06)",
+          "chunk_index": 9,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "```\nMBUS_WR\n  EN      : 실행 트리거\n  PORT    : COM 포트 번호\n  SLAVE   : 슬레이브 국번\n  FUNC    : Function Code (6 = Write Single Register)\n  ADDR    : 대상 레지스터 주소\n  DATA    : 쓸 데이터\n  DONE    : 완료 비트\n  ERR     : 에러 비트\n```\n---",
+          "chunk_index": 10,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "## 4. Timeout 및 에러 처리",
+          "chunk_index": 11,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "CRC 에러, Timeout 발생 시 ERR 비트가 ON 된다.\nERRCODE 레지스터에서 구체적 에러 코드를 확인한다.",
+          "chunk_index": 12,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "**일반적인 에러 원인**:\n- Station No 중복 → 응답 충돌 → CRC 에러\n- 종단저항 미설치 → 신호 반사 → 간헐적 에러\n- Timeout 값이 너무 짧음 → 슬레이브 응답 시간 초과\n- Baudrate 불일치 → 통신 자체 불가\n- Parity / Stop Bit 불일치\n---",
+          "chunk_index": 13,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "## 5. 아날로그 입력 모듈 (AI)\n### 4-20mA 입력 설정",
+          "chunk_index": 14,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "XGI-AD4A 또는 XGI-AD8A 모듈 사용 시:\n- 입력 범위: 4-20 mA (또는 0-20 mA, 0-10V)\n- 분해능: 16비트 (0~32767 count)\n- 4 mA → count 0\n- 20 mA → count 32767 (모듈마다 다름, 사양서 확인)",
+          "chunk_index": 15,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "**스케일링 공식**:\n```\n공학값 = (count × (최대 공학값 - 최소 공학값)) / 32767 + 최소 공학값\n```",
+          "chunk_index": 16,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "### Analog Input 관련 주의사항",
+          "chunk_index": 17,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "- 입력 범위(Range) 설정이 현장 계기 출력과 반드시 일치해야 함\n- 배선 단선 시 Burnout 처리 (모듈 설정에 따라 count 최소 또는 최대로 고정됨)\n- Filter 상수: 노이즈가 심한 현장에서는 100~500 ms 설정\n- 공통단(COM) 전위 불일치 시 오프셋 오차 발생\n---",
+          "chunk_index": 18,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "## 6. 디지털 입력/출력 (DI/DO)\n### 입력 신호 확인 방법",
+          "chunk_index": 19,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "XG5000 → 모니터링 → IO 모니터링에서 실시간 ON/OFF 확인 가능.",
+          "chunk_index": 20,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "입력 신호가 들어오지 않을 때:\n- DI LED 점등 여부 확인\n- 공통단(COM) 전압 확인 (DC 24V)\n- 외부 접점 및 배선 확인\n- 강제 입력(Force) 잠금 여부 확인",
+          "chunk_index": 21,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "### 고속카운터 (HSC: High Speed Counter)",
+          "chunk_index": 22,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "전력량계 펄스 입력 등 고속 신호는 일반 DI 대신 HSC 사용 권장.\nXGB 내장 HSC 채널: HSC0~HSC3 (기종마다 다름)",
+          "chunk_index": 23,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        },
+        {
+          "text": "설정 항목:\n- 카운터 모드 (단상/2상)\n- 카운터 방향 (UP/DOWN)\n- 프리셋 값 (오버플로우 전 리셋 기준)",
+          "chunk_index": 24,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/manuals/plc/XGB_modbus_rtu_guide.md"
+          }
+        }
+      ]
+    },
+    "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md": {
+      "file_path": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md",
+      "category": "notes",
+      "file_type": "md",
+      "mtime": 1782551452.367348,
+      "chunks": [
+        {
+          "text": "# 시운전 기록",
+          "chunk_index": 0,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "## 시운전-001 | 권취기 장력제어 시스템 (2024-02)",
+          "chunk_index": 1,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "**현장**: A공장 슬리팅 라인  \n**구성**: LS S300 인버터 × 2 + HBM 로드셀 + LS XGB PLC + LabVIEW 상위 PC",
+          "chunk_index": 2,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "### 인버터 파라미터 설정 기록 (S300)",
+          "chunk_index": 3,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "| 파라미터 | 설명 | 설정값 |\n|---------|------|--------|\n| DRV-05 | Frequency Reference | 3 (RS-485 Communication) |\n| DRV-06 | Run/Stop Command | 3 (RS-485 Communication) |\n| COM-01 | Station No | 1 (권출), 2 (권취) |\n| COM-02 | Baudrate | 9600 bps |\n| COM-03 | Parity | None |\n| COM-04 | Stop Bit | 1 |\n| CON-01 | Control Mode | 1 (Speed Control) |\n| BAS-01 | Max Frequency | 60.00 Hz |\n| BAS-09 | Accel Time | 5.0 s |\n| BAS-10 | Decel Time | 5.0 s |",
+          "chunk_index": 4,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "### Modbus 레지스터 맵 (S300)",
+          "chunk_index": 5,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "| 기능 | 레지스터 | 비고 |\n|------|---------|------|\n| 운전지령 | 0x0001 | 0=Stop, 1=Run Fwd, 2=Run Rev |\n| 주파수지령 | 0x0002 | 단위: 0.01 Hz (예: 3000 = 30.00 Hz) |\n| 출력 주파수 | 0x000D | Read Only |\n| 출력 전류 | 0x000E | Read Only, 단위: 0.1A |\n| 인버터 상태 | 0x000C | 비트 확인 필요 |\n### 로드셀 조정 기록",
+          "chunk_index": 6,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "- 로드셀 용량: 100 kgf  \n- 증폭기 출력: 4-20 mA  \n- PLC AI 모듈: 4-20 mA, 분해능 16000 count  \n- 무부하 출력: 4.01 mA (count: ~26)  \n- 만부하 출력: 20.00 mA (count: 16000)  \n- 스케일링: 장력값(kgf) = count × 100 / 16000  \n- 필터 상수: 50 ms (기계 진동 상태 따라 조정)",
+          "chunk_index": 7,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "### LabVIEW 데이터 수집 설정",
+          "chunk_index": 8,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "- 수집 주기: 100 ms  \n- DB Insert 주기: 500 ms (5개 데이터 묶음)  \n- DB: SQL Server 2019 LocalDB  \n- 연결 방식: ADO.NET, Prepared Statement 사용  \n- Queue 최대 크기: 1000\n---",
+          "chunk_index": 9,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "## 시운전-002 | 압연기 Modbus 다축 제어 (2024-05)",
+          "chunk_index": 10,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "**현장**: B공장 냉간 압연 라인  \n**구성**: LS XGB PLC + LS S300 인버터 × 4대 (Modbus RTU)\n### 통신 배선 규칙",
+          "chunk_index": 11,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "- 통신 케이블: RS-485 쉬엘드 twisted pair, 0.5 sq 이상  \n- 연결 방식: 데이지체인(Daisy Chain), T-분기 금지  \n- 종단저항: 버스 양 끝단에만 120 Ω 설치  \n- 최대 노드 수: 32 (RS-485 표준)\n### 국번 할당",
+          "chunk_index": 12,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "| 장치 | 국번 |\n|-----|-----|\n| PLC (마스터) | - |\n| 인버터 #1 (입측) | 1 |\n| 인버터 #2 (압연 상) | 2 |\n| 인버터 #3 (압연 하) | 3 |\n| 인버터 #4 (출측) | 4 |\n### PLC 통신 설정 (XGB)",
+          "chunk_index": 13,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "- 통신 포트: COM2 (RS-485)  \n- 프로토콜: Modbus RTU Master  \n- 통신속도: 9600 bps  \n- 패리티: None  \n- 스톱비트: 1  \n- 타임아웃: 200 ms  \n- 폴링 주기: 50 ms\n---",
+          "chunk_index": 14,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "## 시운전-003 | 에너지 모니터링 시스템 (2024-07)",
+          "chunk_index": 15,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "**현장**: A공장 에너지 모니터링  \n**구성**: 오므론 전력량계 × 3 + LabVIEW PC + SQL Server\n### 전력량계 사양",
+          "chunk_index": 16,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "| 항목 | 값 |\n|-----|---|\n| 제조사/모델 | 오므론 KM50 |\n| 입력 전압 | 3상 380V |\n| 입력 전류 | CT 비율 200/5A |\n| 펄스 출력 | 1000 pulse/kWh |\n| 펄스 폭 | 60 ms |\n| 펄스 출력 형태 | 오픈컬렉터 (12-24 Vdc) |",
+          "chunk_index": 17,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "### PLC 고속카운터 설정 (XGB)",
+          "chunk_index": 18,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "- 입력 채널: HSC0, HSC1, HSC2  \n- 카운터 모드: 단상 32비트  \n- 계산식: kWh = 누적카운터 / 1000  \n- 초기화: 00:00 자정 카운터 리셋 또는 오버플로우 처리 필요\n### LabVIEW 수집 설정",
+          "chunk_index": 19,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "- Modbus TCP로 PLC 데이터 수집  \n- 전력량 누적값 및 순시 전력 읽기  \n- DB 저장 주기: 1분 단위 평균값  \n- 일별/월별 집계는 SQL VIEW로 처리\n---",
+          "chunk_index": 20,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "## 시운전-004 | 로드셀 기반 중량 측정 (2024-09)",
+          "chunk_index": 21,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "**현장**: C공장 배합 설비  \n**구성**: 로드셀 × 4 + 접속박스 + PLC AI 모듈 (4-20 mA)\n### Calibration 절차",
+          "chunk_index": 22,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "1. 로드셀 배선 완료 후 무부하 출력(mV/V) 측정  \n2. PLC AI 입력 count 읽기 (무부하 → Zero 기준값)  \n3. 기준 분동 적재 (정격 용량의 80% 이상 권장)  \n4. 분동 적재 시 count 읽기 (Span 기준값)  \n5. 스케일링 파라미터 입력  \n6. 여러 점에서 직선성 확인\n### 노이즈 대책",
+          "chunk_index": 23,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        },
+        {
+          "text": "- 신호 케이블: 쉬엘드 4심 (로드셀 ↔ 접속박스 ↔ 증폭기)  \n- 쉬엘드 접지: PLC 판넬측 단일 접지  \n- 인버터/동력 케이블과 30 cm 이상 이격  \n- AI 모듈 필터 상수: 초기 100 ms 설정 후 현장 상황 따라 조정  \n- 접속박스 내 서미스터 또는 션트 저항은 로드셀 사양서 확인",
+          "chunk_index": 24,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/commissioning_records.md"
+          }
+        }
+      ]
+    },
+    "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md": {
+      "file_path": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md",
+      "category": "notes",
+      "file_type": "md",
+      "mtime": 1782551492.8433504,
+      "chunks": [
+        {
+          "text": "# 자주 쓰는 공식 모음\n## 1. 인버터 / 모터\n### 주파수 ↔ 속도 변환",
+          "chunk_index": 0,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\nN (rpm) = (120 × f) / P\nf (Hz)  = (N × P) / 120",
+          "chunk_index": 1,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "N  : 동기 회전속도 [rpm]\nf  : 주파수 [Hz]\nP  : 극수 (Poles)\n```",
+          "chunk_index": 2,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "예: 4극 모터, 60 Hz → 1800 rpm (동기)  \n실제 속도는 슬립(Slip) 만큼 작음 (보통 1700~1750 rpm)\n### 토크 ↔ 전류 (개략)",
+          "chunk_index": 3,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\nT ≈ (V × I × η × PF × 9550) / N",
+          "chunk_index": 4,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "T  : 토크 [N·m]\nV  : 전압 [V] (선간)\nI  : 전류 [A]\nη  : 효율 (0.85~0.95)\nPF : 역률 (0.8~0.95)\nN  : 회전속도 [rpm]\n```\n---\n## 2. 로드셀 / 장력 계산",
+          "chunk_index": 5,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### 4-20 mA 아날로그 공학값 변환",
+          "chunk_index": 6,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\n공학값 = (I - 4) / (20 - 4) × 정격용량",
+          "chunk_index": 7,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "I      : 증폭기 출력 전류 [mA]\n정격용량: 로드셀 정격 [kgf 또는 N]\n```",
+          "chunk_index": 8,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### PLC AI count → 공학값 (4-20 mA 기준)",
+          "chunk_index": 9,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\n공학값 = (count - count_zero) / (count_span - count_zero) × 정격용량",
+          "chunk_index": 10,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "count_zero : 4 mA 시 count (보통 0)\ncount_span : 20 mA 시 count (모듈에 따라 4000, 8000, 16000, 32767 등)\n```\n### 로드셀 출력 (mV/V)",
+          "chunk_index": 11,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\n출력 [mV/V] = 로드셀_출력 [mV] / 공급전압 [V]\n실제 하중  = (출력 / 정격출력) × 정격용량\n```\n---",
+          "chunk_index": 12,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "## 3. Modbus 레지스터 계산",
+          "chunk_index": 13,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### 16bit 부호있는 정수 (Signed Int16)",
+          "chunk_index": 14,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\n값 범위: -32768 ~ +32767\n음수 표현: 65536 + 음수값\n예: -1 → 65535 (0xFFFF)\n```",
+          "chunk_index": 15,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### 32bit 정수 (PLC에서 2 레지스터 사용)",
+          "chunk_index": 16,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\n상위 레지스터 × 65536 + 하위 레지스터 = 32bit 값\n```",
+          "chunk_index": 17,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### 주파수지령 레지스터 계산 (S300 예시)",
+          "chunk_index": 18,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\n레지스터 값 = 목표주파수[Hz] × 100\n예: 30 Hz → 3000\n```\n---\n## 4. 전력 / 에너지\n### 3상 전력",
+          "chunk_index": 19,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\nP [W]   = √3 × V × I × PF\nS [VA]  = √3 × V × I\nQ [VAR] = √3 × V × I × sin(θ)\nPF      = cos(θ) = P / S\n```\n### 전력량 (kWh) 계산",
+          "chunk_index": 20,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\nE [kWh] = P [kW] × t [h]\n펄스 방식: E = 펄스 수 / 펄스 레이트 [pulse/kWh]\n예: 1000 pulse/kWh, 5000 펄스 → 5 kWh\n```",
+          "chunk_index": 21,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### CT (전류 변성기) 실제 전류",
+          "chunk_index": 22,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\n실제 전류 [A] = 측정값 [A] × CT비율\n예: CT 200/5A, 측정값 3.5 A → 실제 140 A\n```\n---\n## 5. 신호 처리",
+          "chunk_index": 23,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### 1차 저역통과 필터 (LPF) 시정수",
+          "chunk_index": 24,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\nY(k) = α × X(k) + (1 - α) × Y(k-1)",
+          "chunk_index": 25,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "α  = Δt / (τ + Δt)\nΔt : 샘플링 주기 [s]\nτ  : 시정수 [s]\n```",
+          "chunk_index": 26,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### 이동평균 (Moving Average)",
+          "chunk_index": 27,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\nMA(k) = (X(k) + X(k-1) + ... + X(k-N+1)) / N",
+          "chunk_index": 28,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "N : 윈도우 크기 (클수록 부드럽지만 응답 느림)\n```\n---",
+          "chunk_index": 29,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "## 6. RS-485 / Modbus RTU 타이밍\n### CRC-16 (Modbus)",
+          "chunk_index": 30,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\n다항식: 0xA001 (역순 표현)\n초기값: 0xFFFF\n처리: 각 바이트에 대해 비트 연산\n```",
+          "chunk_index": 31,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### 문자 간 침묵 시간 (Character Timeout)",
+          "chunk_index": 32,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\n3.5 문자 × (1 / 보레이트) × 비트 수 = 최소 프레임 구분 시간\n예: 9600 bps, 11 bit/char → 3.5 × 11 / 9600 ≈ 4.0 ms\n```\n---\n## 7. LabVIEW / DB",
+          "chunk_index": 33,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### Producer-Consumer 패턴 개요",
+          "chunk_index": 34,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "```\nProducer Loop : 센서 데이터 수집 → Queue에 Enqueue\nConsumer Loop : Queue에서 Dequeue → DB Insert",
+          "chunk_index": 35,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "- Queue 크기: 수집 주기 × 예상 지연 시간으로 설정\n- Consumer가 느려도 Producer 블로킹 방지\n```",
+          "chunk_index": 36,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "### SQL Insert 성능 (경험치)",
+          "chunk_index": 37,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        },
+        {
+          "text": "| 방식 | 대략적 Insert 속도 |\n|-----|-----------------|\n| 매번 연결 + Execute SQL | 수백 ms/건 |\n| 연결 유지 + Execute SQL | 10~50 ms/건 |\n| 연결 유지 + Prepared Statement | 1~10 ms/건 |\n| Transaction 묶음 + Prepared | 0.1~1 ms/건 |",
+          "chunk_index": 38,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/frequently_used_formulas.md"
+          }
+        }
+      ]
+    },
+    "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md": {
+      "file_path": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md",
+      "category": "notes",
+      "file_type": "md",
+      "mtime": 1782551414.9113457,
+      "chunks": [
+        {
+          "text": "# 현장 트러블슈팅 사례 모음",
+          "chunk_index": 0,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "## CASE-001 | 인버터 S300 속도지령 불응 (2024-03)",
+          "chunk_index": 1,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "**장비**: LS S300 인버터 / 현장: 권취기 라인 2호기  \n**증상**: PLC Modbus 통신으로 주파수지령을 Write해도 인버터가 속도를 바꾸지 않음.  \n**원인**: 주파수지령 소스 파라미터(DRV-05)가 Keypad로 설정되어 있었음. 통신으로 바꾸려면 Frequency Reference = Communication(3)으로 설정해야 함.  \n**조치**: DRV-05 → 3 (Communication) 변경, DRV-06(운전지령소스)도 RS-485로 변경  \n**참고**: 운전지령(Run Command)과 주파수지령(Frequency Reference) 소스가 별도 파라미터임을 주의.\n---",
+          "chunk_index": 2,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "## CASE-002 | 로드셀 증폭기 출력 흔들림 (2024-04)",
+          "chunk_index": 3,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "**장비**: HBM C2 로드셀 + 증폭기 / 현장: 장력측정 스탠드  \n**증상**: 무부하 상태에서 PLC AI count가 ±15 count 변동. 정상 범위는 ±2 이내여야 함.  \n**원인**: 쉴드 케이블이 양쪽 모두 접지되어 Ground Loop 형성됨.  \n**조치**: 증폭기 측 쉴드 접지선 제거, 현장측(로드셀 쪽)만 단일 접지로 변경.  \n**결과**: 변동폭 ±1 count로 개선.  \n**비고**: 기계 진동이 심한 경우 증폭기의 Low-Pass Filter 상수를 늘려야 할 수 있음.\n---",
+          "chunk_index": 4,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "## CASE-003 | Modbus RTU 통신 불안정 (2024-05)",
+          "chunk_index": 5,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "**장비**: LS XGB PLC ↔ 인버터 3대 / 현장: 압연기 라인  \n**증상**: 인버터 1번은 통신 정상, 2번은 간헐적 에러, 3번은 항상 에러.  \n**진단**:\n- 국번 확인: 1번=1, 2번=1 (중복!) → 2번 국번을 2로 변경\n- 3번은 종단저항 미설치 → 120Ω 종단저항 추가\n**조치**: 국번 중복 해소 + 종단저항 설치 후 정상화  \n**교훈**: RS-485 버스 끝단 장치에는 반드시 종단저항 설치. 국번 중복 시 응답 충돌로 CRC 에러 발생.\n---",
+          "chunk_index": 6,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "## CASE-004 | LabVIEW DB Insert 지연 (2024-06)",
+          "chunk_index": 7,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "**장비**: LabVIEW 2022 + SQL Server / 현장: 시험설비 데이터로거  \n**증상**: 100ms 주기 수집인데 1~2초마다 데이터가 한꺼번에 Insert됨. 간헐적 데이터 누락.  \n**원인**:\n1. DB 연결을 Insert 루프마다 Open/Close하는 구조 → 연결 오버헤드 누적\n2. Execute SQL 방식 사용 (Prepared Statement 미사용) → 매번 쿼리 파싱\n**조치**:\n1. DB 연결을 프로그램 초기화 시 1회만 Open, 종료 시 Close\n2. Prepare Statement를 루프 밖으로 이동\n3. 100건 단위로 Transaction 묶어서 Commit\n**결과**: 평균 Insert 지연 80ms → 12ms로 감소, 데이터 누락 없음.\n---",
+          "chunk_index": 8,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "## CASE-005 | 전력량계 펄스 계산 오차 (2024-07)",
+          "chunk_index": 9,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "**장비**: 오므론 전력량계 (1000 pulse/kWh) / 현장: 에너지 모니터링  \n**증상**: PLC에서 계산한 적산 전력이 전력량계 표시값과 약 10% 차이 발생.  \n**원인**: PLC 프로그램에서 펄스 레이트를 100 pulse/kWh로 잘못 설정.  \n**조치**: 전력량계 데이터시트 재확인 → 1000 pulse/kWh로 수정.  \n계산식: kWh = 펄스 수 / 1000  \n**비고**: 전력량계 사양서의 Pulse Rate(또는 Pulse Constant) 항목 반드시 확인.\n---",
+          "chunk_index": 10,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "## CASE-006 | PLC 아날로그 입력 스케일링 오차 (2024-08)",
+          "chunk_index": 11,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "**장비**: Mitsubishi iQ-R PLC + 4-20mA 압력 센서  \n**증상**: 압력 0 kPa일 때 PLC 계산값이 음수로 나옴.  \n**원인**: AI 모듈 입력 범위가 0-20mA로 설정되어 있었음 (4-20mA가 아님).  \n**조치**: AI 모듈 입력 범위를 4-20mA로 변경 후 오프셋 재조정.  \n**스케일링 공식**:  \n```\n공학값 = (count - 0) × (최대값 - 최소값) / (16000 - 0) + 최소값\n```  \n※ 4-20mA 모듈에서 count 0 = 4mA, count 16000 = 20mA 인 경우 (모듈마다 다름)\n---",
+          "chunk_index": 12,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "## CASE-007 | 인버터 OV 트립 (과전압) (2024-09)",
+          "chunk_index": 13,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "**장비**: LS S100 인버터 / 현장: 컨베이어  \n**증상**: 감속 시 과전압(OV) 트립 발생.  \n**원인**: 감속 시 전동기 회생에너지가 직류링크(DC Link)에 충전되어 과전압 트립.  \n**조치 검토 항목**:\n- 감속 시간(Decel Time) 증가 검토\n- 제동저항(Braking Resistor) 설치 검토\n- 동적제동 유닛(DBU) 용량 확인\n**비고**: OV 트립 레벨은 보통 DC 800V 이상. 실제 DC 링크 전압 모니터링 권장.\n---",
+          "chunk_index": 14,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "## CASE-008 | RS-485 신호 반전 (2024-10)",
+          "chunk_index": 15,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        },
+        {
+          "text": "**장비**: 계측기 ↔ PLC RS-485 통신  \n**증상**: 통신 케이블 연결 후 전혀 통신이 안 됨.  \n**원인**: RS-485 A(+)/B(-) 케이블이 반대로 연결됨.  \n**확인 방법**: 테스터기로 정상 통신 중 A단자는 B단자보다 전압이 높아야 함 (보통 +수백mV).  \n**조치**: A/B 케이블 교체 후 즉시 통신 복구.",
+          "chunk_index": 16,
+          "page_number": null,
+          "source_info": {
+            "file": "/home/user/codex-repository/manual-knowledge-tool/notes/troubleshooting_cases.md"
+          }
+        }
+      ]
+    }
+  }
+}

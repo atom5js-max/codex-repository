@@ -271,3 +271,184 @@ plc_io_check:
     - 공통단(COM) 전압 확인
     - 출력 부하 및 퓨즈 확인
     - 강제 출력(Force) 잠금 여부 확인
+
+# ── 추가 규칙 ────────────────────────────────────────────────────────────────
+
+pressure_sensor_issue:
+  field_terms:
+    - 압력 값 이상
+    - 압력 센서 이상
+    - 압력 신호 이상
+    - 압력계 값 틀림
+    - 압력 0 안 나옴
+    - 압력 튐
+    - 압력 값 안 바뀜
+  manual_terms:
+    - Pressure Transmitter
+    - 4-20mA
+    - Zero
+    - Span
+    - Calibration
+    - Burnout
+    - Loop Power
+    - Wire Break
+    - HART
+    - Scaling
+    - 영점
+    - 스팬
+    - 단선
+  check_items:
+    - 트랜스미터 출력 전류(mA) 직접 측정
+    - 루프 파워(Loop Power) 공급 전압 확인
+    - 배선 단선 여부 확인
+    - AI 모듈 입력 범위 설정(4-20mA/0-10V) 일치 확인
+    - 영점(Zero) 및 스팬(Span) 보정 상태 확인
+    - 연결 배관 밸브 열림 여부 확인
+
+temperature_sensor_issue:
+  field_terms:
+    - 온도 값 이상
+    - 온도 센서 이상
+    - 온도 신호 이상
+    - 온도계 오차
+    - PT100 이상
+    - 열전대 이상
+    - TC 이상
+    - RTD 이상
+  manual_terms:
+    - Temperature Transmitter
+    - PT100
+    - PT1000
+    - Thermocouple
+    - RTD
+    - 4-20mA
+    - Cold Junction
+    - Calibration
+    - Zero
+    - Span
+    - 냉접점 보상
+    - 열전대
+    - 측온저항체
+  check_items:
+    - 센서 타입(K/J/PT100 등) 모듈 설정 일치 확인
+    - 냉접점 보상(Cold Junction Compensation) 설정 확인
+    - 배선 극성(+ / -) 확인
+    - 보상 도선 사용 여부(열전대인 경우) 확인
+    - 기준 온도계와 비교 측정
+
+inverter_accel_problem:
+  field_terms:
+    - 인버터 가속 안 됨
+    - 가속 중 트립
+    - 기동 안 됨
+    - 기동 전류 높음
+    - 기동 시 트립
+    - 모터 안 돌아감
+    - 모터 기동 불가
+  manual_terms:
+    - Acceleration Time
+    - Accel Time
+    - Starting Torque
+    - Boost
+    - V/F Pattern
+    - Motor Parameter
+    - Auto-tuning
+    - Torque Boost
+    - Stall Prevention
+    - 가속시간
+    - 기동 토크
+    - 자동 튜닝
+  check_items:
+    - 가속 시간(Accel Time) 설정값 확인 (너무 짧으면 OC 트립)
+    - 전동기 정격 전류 파라미터 입력 확인
+    - V/F 패턴 설정 확인
+    - 기동 전류 모니터링
+    - 자동 튜닝(Auto-tuning) 실행 여부 검토
+    - 부하 특성(관성, 마찰) 확인
+
+hmi_comm_problem:
+  field_terms:
+    - HMI 통신 안 됨
+    - 터치패널 통신 에러
+    - 화면 통신 안 됨
+    - 스카다 통신 안 됨
+    - 모니터링 안 됨
+    - 상위 PC 통신 안 됨
+  manual_terms:
+    - Ethernet
+    - Modbus TCP
+    - Modbus RTU
+    - OPC-UA
+    - Station No
+    - IP Address
+    - Port
+    - Timeout
+    - Gateway
+    - 통신 설정
+    - 국번
+  check_items:
+    - HMI ↔ PLC 통신 방식(Ethernet/RS-485) 확인
+    - IP 주소 및 포트 설정 일치 확인
+    - 방화벽 및 공유기 설정 확인(Ethernet인 경우)
+    - 국번 설정 확인(RS-485인 경우)
+    - 케이블 연결 상태 확인
+    - HMI 드라이버 설정 확인
+
+plc_program_error:
+  field_terms:
+    - PLC 에러
+    - PLC 프로그램 이상
+    - PLC 멈춤
+    - 래더 에러
+    - CPU 에러
+    - 스캔 타임 이상
+    - 프로그램 오류
+  manual_terms:
+    - CPU Error
+    - Scan Time
+    - Watchdog
+    - Program Error
+    - Memory Error
+    - Battery
+    - Error Code
+    - Diagnostic
+    - 스캔타임
+    - 워치독
+    - 메모리 에러
+  check_items:
+    - PLC 전면 ERROR LED 확인
+    - 프로그래밍 소프트웨어 에러 코드 확인
+    - 스캔 타임 모니터링 (정상 범위 초과 여부)
+    - 배터리 전압 확인
+    - 메모리 이상 여부 확인
+    - 프로그램 백업 상태 확인
+
+calibration_general:
+  field_terms:
+    - 교정
+    - 캘리브레이션
+    - Calibration
+    - 영점 조정
+    - 스팬 조정
+    - 기준값 틀림
+    - 값 오차
+    - 값 차이
+  manual_terms:
+    - Calibration
+    - Zero
+    - Span
+    - Offset
+    - Gain
+    - Reference
+    - Trim
+    - 영점
+    - 스팬
+    - 오프셋
+    - 교정
+  check_items:
+    - 기준 계측기(교정기) 정확도 확인
+    - 무부하/기준값 인가 상태 확인
+    - Zero(영점) 값 기록
+    - Span(스팬) 값 기록
+    - 스케일링 공식 적용 확인
+    - 교정 이력 문서화

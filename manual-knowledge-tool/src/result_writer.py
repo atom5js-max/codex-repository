@@ -106,6 +106,7 @@ def write_results(
     output_path: Path,
     include_timestamp: bool = True,
     highlight: bool = True,
+    summary: str | None = None,
 ) -> None:
     """
     검색 결과를 Markdown 파일로 저장한다.
@@ -160,6 +161,20 @@ def write_results(
     lines.append("")
     lines.append("---")
     lines.append("")
+
+    # ── LLM 요약 (Stage C 활성 시) ────────────────────────
+    if summary:
+        lines.append("## AI 요약 (참고용)")
+        lines.append("")
+        lines.append(
+            "> **주의**: 아래 요약은 참고용이며 원인 단정이 아닙니다. "
+            "반드시 원문 검색 결과를 직접 확인하십시오."
+        )
+        lines.append("")
+        lines.append(summary)
+        lines.append("")
+        lines.append("---")
+        lines.append("")
 
     # ── 검색 결과 목록 ─────────────────────────────────────
     lines.append("## 검색 결과")
