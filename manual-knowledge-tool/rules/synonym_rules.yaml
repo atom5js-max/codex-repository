@@ -1,0 +1,273 @@
+# synonym_rules.yaml
+# 현장어 → 매뉴얼어 확장 규칙
+#
+# 구조:
+#   rule_name:
+#     field_terms   : 현장에서 쓰는 표현 목록 (이 중 하나라도 쿼리에 포함되면 규칙 발동)
+#     manual_terms  : 매뉴얼에서 쓰는 용어 목록 (확장 검색에 사용)
+#     check_items   : 현장 확인 항목 (결과 하단에 표시, 단정 지시 아님)
+#
+# 우선순위: field_terms 중 긴 문자열 먼저 매칭
+
+speed_command_problem:
+  field_terms:
+    - 속도 안 먹음
+    - 속도지령 안 먹음
+    - 주파수 지령 안 됨
+    - 주파수지령 안 됨
+    - 인버터 속도 안 바뀜
+    - 속도 안 바뀜
+    - 주파수 안 바뀜
+    - 지령 안 먹음
+  manual_terms:
+    - Frequency Reference
+    - Command Source
+    - Speed Command
+    - Run Command
+    - Communication Command
+    - Modbus
+    - RS-485
+    - 주파수지령
+    - 운전지령
+    - 지령소스
+    - 다단속
+    - Multi-Step Speed
+  check_items:
+    - 운전지령 소스(디지털/아날로그/통신) 설정 확인
+    - 주파수지령 소스 파라미터 확인
+    - 통신 국번 확인
+    - 통신속도(Baudrate) 확인
+    - 패리티(Parity) 확인
+    - PLC Write 레지스터 주소 확인
+    - 인버터 RUN 상태 확인
+
+loadcell_noise:
+  field_terms:
+    - 로드셀 값 튐
+    - 장력값 흔들림
+    - 장력 값 흔들림
+    - 아날로그 값 튐
+    - 무부하 값 흔들림
+    - 계측값 흔들림
+    - 계측 값 튐
+    - 하중 값 튐
+    - 하중값 흔들림
+    - 중량값 튐
+  manual_terms:
+    - Noise
+    - Filter
+    - Shield
+    - Ground
+    - Zero
+    - Offset
+    - Analog Input
+    - Calibration
+    - Span
+    - Shielded Cable
+    - EMI
+    - 필터
+    - 접지
+    - 쉴드
+    - 노이즈
+    - 제로
+  check_items:
+    - 로드셀 무부하 출력(mV/V) 확인
+    - 증폭기 mA 출력 변동폭 확인
+    - PLC AI 입력 count 변동폭 확인
+    - 쉴드 케이블 한쪽 접지 여부 확인
+    - 입력 필터 상수 설정 확인
+    - 기계 진동 여부 확인
+    - 로드셀 부착부 흔들림 확인
+
+modbus_comm_problem:
+  field_terms:
+    - 통신 안 됨
+    - 통신 안됨
+    - Modbus 안 됨
+    - Modbus 안됨
+    - 인버터 통신 에러
+    - PLC 통신 에러
+    - 통신 에러
+    - 485 안 됨
+    - RS485 안 됨
+    - 시리얼 통신 안 됨
+  manual_terms:
+    - Modbus
+    - Modbus RTU
+    - Station No
+    - Slave Address
+    - Baudrate
+    - Parity
+    - Stop Bit
+    - Timeout
+    - Function Code
+    - CRC
+    - RS-485
+    - Termination Resistor
+    - 종단저항
+    - 통신속도
+    - 국번
+  check_items:
+    - 국번(Station No) 중복 여부 확인
+    - 통신속도(Baudrate) 마스터/슬레이브 일치 확인
+    - 패리티(Parity) 설정 확인
+    - 스톱비트(Stop Bit) 설정 확인
+    - 종단저항(120Ω) 위치 확인
+    - RS-485 A/B 극성 확인
+    - 기능코드(Function Code) 확인
+    - 레지스터 주소 오프셋 확인
+    - 케이블 단선 여부 확인
+
+labview_db_slow:
+  field_terms:
+    - DB 저장 느림
+    - LabVIEW 멈춤
+    - LabVIEW 느림
+    - 저장 지연
+    - 데이터 누락
+    - 데이터 저장 안 됨
+    - 로그 누락
+    - 저장 안 됨
+    - 기록 누락
+  manual_terms:
+    - Queue
+    - Producer Consumer
+    - Prepared Statement
+    - Prepare Statement
+    - Transaction
+    - Insert
+    - Timeout
+    - Error Cluster
+    - Connection
+    - Database
+    - DB Connection
+    - Loop Timing
+    - Wait
+  check_items:
+    - DB 연결을 루프마다 열고 닫는 구조인지 확인
+    - Prepare Statement 위치(루프 밖에 있는지) 확인
+    - Queue 누적(적체) 여부 확인
+    - Insert 주기와 수집 주기 비율 확인
+    - Transaction(일괄 커밋) 적용 여부 확인
+    - 네트워크 경로 DB인 경우 연결 상태 확인
+    - Error Cluster 처리 여부 확인
+
+analog_input_issue:
+  field_terms:
+    - 아날로그 입력 이상
+    - AI 값 이상
+    - 아날로그 값 이상
+    - PLC 아날로그 값 이상
+    - 4-20mA 이상
+    - 전압 신호 이상
+    - 아날로그 카드 이상
+  manual_terms:
+    - Analog Input
+    - AI Module
+    - 4-20mA
+    - 0-10V
+    - Scaling
+    - Resolution
+    - Range
+    - Offset
+    - Filter
+    - Burnout
+    - Wire Break
+    - 단선
+    - 스케일링
+    - 아날로그 입력
+  check_items:
+    - 아날로그 모듈 입력 범위 설정(4-20mA / 0-10V) 확인
+    - 현장 계기 출력 신호 유형 확인
+    - 배선 단선 여부 확인
+    - 스케일링(Scaling) 파라미터 확인
+    - 필터 설정 확인
+    - 전원공급(Loop Power) 여부 확인
+
+power_meter_pulse:
+  field_terms:
+    - 전력량계 펄스
+    - 전력 펄스 계산
+    - 전력계 펄스
+    - 펄스 계산
+    - kWh 펄스
+    - 전력량 계산
+    - 전력 펄스 안 들어옴
+  manual_terms:
+    - Pulse Output
+    - Pulse Rate
+    - kWh
+    - Energy
+    - High Speed Counter
+    - HSC
+    - DI Pulse
+    - Pulse Width
+    - 펄스 출력
+    - 펄스 레이트
+    - 고속카운터
+  check_items:
+    - 전력량계 펄스 출력 사양(펄스/kWh) 확인
+    - PLC 고속카운터(HSC) 또는 DI 입력 설정 확인
+    - 펄스 폭(Pulse Width) 확인
+    - 전원 극성 및 배선 확인
+    - 계산식(kWh = 펄스 수 / 펄스 레이트) 검토
+
+inverter_trip:
+  field_terms:
+    - 인버터 트립
+    - 인버터 폴트
+    - 인버터 에러
+    - 과전류 트립
+    - 과전압 트립
+    - OC 트립
+    - OV 트립
+    - 인버터 알람
+  manual_terms:
+    - Trip
+    - Fault
+    - Overcurrent
+    - Overvoltage
+    - OC
+    - OV
+    - Alarm
+    - Protection
+    - Reset
+    - Fault Code
+    - 트립
+    - 과전류
+    - 과전압
+    - 보호기능
+  check_items:
+    - 인버터 표시부 에러 코드 확인
+    - 에러 이력(Fault History) 확인
+    - 부하 전류 확인
+    - 가감속 시간 설정 확인
+    - 전동기 정격 파라미터 확인
+    - 제동저항 연결 여부 확인(OV인 경우)
+
+plc_io_check:
+  field_terms:
+    - PLC 입력 안 읽힘
+    - DI 안 들어옴
+    - 입력 신호 안 읽힘
+    - DO 안 나옴
+    - 출력 안 나옴
+    - PLC IO 이상
+  manual_terms:
+    - Digital Input
+    - Digital Output
+    - DI
+    - DO
+    - Input Module
+    - Output Module
+    - Force
+    - Monitoring
+    - 디지털 입력
+    - 디지털 출력
+    - 강제 출력
+  check_items:
+    - PLC 프로그래밍 소프트웨어 IO 모니터링 확인
+    - 입력 신호 LED 점등 여부 확인
+    - 공통단(COM) 전압 확인
+    - 출력 부하 및 퓨즈 확인
+    - 강제 출력(Force) 잠금 여부 확인

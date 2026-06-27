@@ -1,0 +1,62 @@
+# search_rules.yaml
+# 검색 동작 설정 파일
+
+search:
+  # 대소문자 구분 여부 (false = 구분 안 함)
+  case_sensitive: false
+
+  # 텍스트 청킹 방식: paragraph | fixed_size
+  chunk_mode: paragraph
+
+  # 청크 최소 길이 (이보다 짧은 청크는 무시)
+  min_chunk_length: 20
+
+  # 청크 최대 길이 (paragraph 모드에서 이 이상이면 재분할)
+  max_chunk_length: 800
+
+  # 검색 결과 최대 개수
+  max_results: 20
+
+  # 결과 표시 시 청크 앞뒤로 보여줄 컨텍스트 글자 수
+  context_chars: 120
+
+  # 확장 검색어 매칭 점수 (원본 매칭 = 1.0 기준 상대값)
+  expanded_match_weight: 0.7
+
+  # 동일 파일에서 최대 표시 결과 수
+  max_results_per_file: 5
+
+output:
+  # 결과 파일 경로 (manual-knowledge-tool/ 기준 상대경로)
+  result_file: output/search_result.md
+
+  # 타임스탬프 포함 여부
+  include_timestamp: true
+
+  # 확인 항목 표시 여부
+  include_check_items: true
+
+  # 매칭 단어 강조 (마크다운 bold)
+  highlight_matches: true
+
+pdf:
+  # PDF 처리 라이브러리: pdfplumber | pypdf | auto
+  # auto: pdfplumber 우선, 없으면 pypdf 시도
+  library: auto
+
+  # 페이지당 최소 텍스트 길이 (이 미만이면 스캔 이미지로 판단하고 스킵)
+  min_page_text_length: 30
+
+  # 처리할 최대 페이지 수 (0 = 제한 없음)
+  max_pages: 0
+
+categories:
+  # 경로에서 카테고리를 추론하는 규칙
+  # 키: 경로에 포함된 문자열, 값: 표시할 카테고리명
+  inverter: 인버터
+  plc: PLC
+  loadcell: 로드셀
+  instruments: 계측기
+  labview: LabVIEW
+  database: 데이터베이스
+  notes: 현장메모
