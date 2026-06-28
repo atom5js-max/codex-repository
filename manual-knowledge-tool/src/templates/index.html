@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>산업설비 기술자료 검색</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
+
+    /* ── 헤더 ── */
+    .header {
+      background: #1e293b;
+      color: white;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.3px; }
+    .header .meta { font-size: 0.8rem; color: #94a3b8; }
+
+    /* ── 검색 영역 ── */
+    .search-area { background: #1e293b; padding: 0 32px 24px; }
+    .search-row { display: flex; gap: 10px; max-width: 820px; }
+    .search-input {
+      flex: 1;
+      padding: 14px 20px;
+      font-size: 1.05rem;
+      border: 2px solid transparent;
+      border-radius: 10px;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: #3b82f6; }
+    .search-btn {
+      padding: 14px 30px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: inherit;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .search-btn:hover { background: #2563eb; }
+    .search-btn:active { background: #1d4ed8; }
+
+    /* ── 빠른 검색 ── */
+    .quick-area { padding: 14px 32px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+    .quick-label { font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px; }
+    .quick-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .quick-btn {
+      padding: 5px 14px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.83rem;
+      color: #475569;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .quick-btn:hover { background: #3b82f6; color: white; border-color: #3b82f6; }
+
+    /* ── 발동 규칙 인포바 ── */
+    .info-bar {
+      display: none;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 32px;
+      background: #eff6ff;
+      border-bottom: 1px solid #bfdbfe;
+      font-size: 0.82rem;
+      color: #475569;
+    }
+    .info-bar.visible { display: flex; }
+    .rule-tag  { background: #dbeafe; color: #1d4ed8; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
+    .kw-tag    { background: #dcfce7; color: #166534; padding: 3px 10px; border-radius: 12px; }
+    .info-sep  { color: #cbd5e1; }
+
+    /* ── 본문 ── */
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 310px;
+      gap: 20px;
+      padding: 20px 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ── 결과 헤더 ── */
+    .results-meta {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* ── 결과 카드 ── */
+    .result-card {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      border-left: 4px solid #e2e8f0;
+      transition: box-shadow 0.15s, transform 0.1s;
+    }
+    .result-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.11); transform: translateY(-1px); }
+
+    .card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+
+    .score-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .score-high { background: #dcfce7; color: #166534; }
+    .score-mid  { background: #fef9c3; color: #854d0e; }
+    .score-low  { background: #f1f5f9; color: #64748b; }
+
+    .cat-badge {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .cat-inverter    { background: #dbeafe; color: #1d4ed8; }
+    .cat-plc         { background: #dcfce7; color: #166534; }
+    .cat-loadcell    { background: #fed7aa; color: #9a3412; }
+    .cat-instruments { background: #e9d5ff; color: #6b21a8; }
+    .cat-labview     { background: #fef08a; color: #713f12; }
+    .cat-database    { background: #fecaca; color: #991b1b; }
+    .cat-notes       { background: #ccfbf1; color: #134e4a; }
+
+    .match-label { font-size: 0.7rem; color: #94a3b8; margin-left: auto; }
+
+    .card-title    { font-size: 0.9rem; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+    .card-location { font-size: 0.75rem; color: #94a3b8; margin-bottom: 8px; }
+
+    .card-context {
+      font-size: 0.86rem;
+      color: #475569;
+      line-height: 1.65;
+      background: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #f1f5f9;
+    }
+    .card-context mark { background: #fef08a; color: inherit; border-radius: 3px; padding: 0 2px; }
+
+    .term-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .term-chip {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 0.73rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid #bfdbfe;
+    }
+
+    /* ── 사이드바 (확인 항목) ── */
+    .sidebar { position: sticky; top: 80px; height: fit-content; }
+    .sidebar-card {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      display: none;
+    }
+    .sidebar-card.visible { display: block; }
+    .sidebar-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar-title-icon {
+      background: #3b82f6;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 9px 0;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.84rem;
+      color: #334155;
+      line-height: 1.55;
+    }
+    .check-item:last-child { border-bottom: none; }
+    .check-item input[type=checkbox] {
+      margin-top: 3px;
+      flex-shrink: 0;
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+      accent-color: #3b82f6;
+    }
+    .check-item label { cursor: pointer; }
+    .check-item input:checked + label { text-decoration: line-through; color: #94a3b8; }
+
+    /* ── 상태 메시지 ── */
+    .state-box { text-align: center; padding: 64px 24px; color: #94a3b8; }
+    .state-box .state-icon { font-size: 3rem; margin-bottom: 14px; }
+    .state-box .state-msg  { font-size: 0.95rem; }
+    .state-box .state-sub  { font-size: 0.82rem; margin-top: 6px; color: #cbd5e1; }
+
+    /* ── 반응형 ── */
+    @media (max-width: 860px) {
+      .main { grid-template-columns: 1fr; padding: 16px; }
+      .sidebar { position: static; }
+      .header, .search-area, .quick-area { padding-left: 16px; padding-right: 16px; }
+      .info-bar { padding-left: 16px; padding-right: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── 헤더 ── -->
+<div class="header">
+  <h1>⚙ 산업설비 기술자료 검색</h1>
+  <span class="meta">문서 {{ doc_count }}개 로드됨</span>
+</div>
+
+<!-- ── 검색창 ── -->
+<div class="search-area">
+  <div class="search-row">
+    <input class="search-input" id="searchInput" type="text"
+           placeholder="현장어로 입력하세요. 예: S300 속도지령 안 먹음"
+           autofocus>
+    <button class="search-btn" onclick="doSearch()">검색</button>
+  </div>
+</div>
+
+<!-- ── 빠른 검색 ── -->
+<div class="quick-area">
+  <div class="quick-label">빠른 검색 예시</div>
+  <div class="quick-list">
+    <button class="quick-btn" onclick="setQuery('S300 속도지령 안 먹음')">S300 속도지령 안 먹음</button>
+    <button class="quick-btn" onclick="setQuery('Modbus 통신 안 됨')">Modbus 통신 안 됨</button>
+    <button class="quick-btn" onclick="setQuery('로드셀 값 튐')">로드셀 값 튐</button>
+    <button class="quick-btn" onclick="setQuery('LabVIEW DB 저장 느림')">LabVIEW DB 저장 느림</button>
+    <button class="quick-btn" onclick="setQuery('인버터 OC 트립')">인버터 OC 트립</button>
+    <button class="quick-btn" onclick="setQuery('전력량계 펄스 계산')">전력량계 펄스 계산</button>
+    <button class="quick-btn" onclick="setQuery('PLC 아날로그 값 이상')">PLC 아날로그 값 이상</button>
+    <button class="quick-btn" onclick="setQuery('압력 센서 이상')">압력 센서 이상</button>
+    <button class="quick-btn" onclick="setQuery('온도 값 이상')">온도 값 이상</button>
+    <button class="quick-btn" onclick="setQuery('인버터 가속 안 됨')">인버터 가속 안 됨</button>
+    <button class="quick-btn" onclick="setQuery('영점 조정')">영점 조정</button>
+    <button class="quick-btn" onclick="setQuery('유량계 통신 안 됨')">유량계 통신 안 됨</button>
+  </div>
+</div>
+
+<!-- ── 발동 규칙 인포바 ── -->
+<div class="info-bar" id="infoBar"></div>
+
+<!-- ── 본문 ── -->
+<div class="main">
+
+  <!-- 결과 영역 -->
+  <div id="resultsSection">
+    <div class="state-box" id="initialState">
+      <div class="state-icon">🔍</div>
+      <div class="state-msg">현장 증상을 입력해 관련 매뉴얼을 검색하세요</div>
+      <div class="state-sub">예시 버튼을 클릭하거나 직접 입력 후 Enter</div>
+    </div>
+    <div id="resultsMeta" class="results-meta" style="display:none"></div>
+    <div id="resultsList"></div>
+  </div>
+
+  <!-- 사이드바: 현장 확인 항목 -->
+  <div class="sidebar">
+    <div class="sidebar-card" id="checkPanel">
+      <div class="sidebar-title">
+        <span class="sidebar-title-icon">✓</span>
+        현장 확인 항목
+      </div>
+      <div id="checkList"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── 카테고리 메타데이터 ──
+const CAT_LABEL = {
+  inverter: '인버터', plc: 'PLC', loadcell: '로드셀',
+  instruments: '계측기', labview: 'LabVIEW',
+  database: '데이터베이스', notes: '현장메모',
+};
+const CAT_CLASS = {
+  inverter: 'cat-inverter', plc: 'cat-plc', loadcell: 'cat-loadcell',
+  instruments: 'cat-instruments', labview: 'cat-labview',
+  database: 'cat-database', notes: 'cat-notes',
+};
+const CAT_COLOR = {
+  inverter: '#3b82f6', plc: '#22c55e', loadcell: '#f97316',
+  instruments: '#a855f7', labview: '#eab308',
+  database: '#ef4444', notes: '#14b8a6',
+};
+
+// ── 유틸 ──
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function highlight(text, terms) {
+  if (!terms || !terms.length || !text) return esc(text || '');
+  let out = esc(text);
+  const sorted = [...terms].sort((a, b) => b.length - a.length);
+  for (const t of sorted) {
+    const re = new RegExp('(' + t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+    out = out.replace(re, '<mark>$1</mark>');
+  }
+  return out;
+}
+
+function scoreClass(s) {
+  if (s >= 5) return 'score-high';
+  if (s >= 2) return 'score-mid';
+  return 'score-low';
+}
+
+// ── 검색 ──
+const inputEl = document.getElementById('searchInput');
+inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+function setQuery(q) { inputEl.value = q; doSearch(); }
+
+function doSearch() {
+  const q = inputEl.value.trim();
+  if (!q) return;
+
+  document.getElementById('initialState').style.display   = 'none';
+  document.getElementById('resultsMeta').style.display    = 'none';
+  document.getElementById('resultsList').innerHTML =
+    '<div class="state-box"><div class="state-icon">⏳</div><div class="state-msg">검색 중...</div></div>';
+  document.getElementById('infoBar').className   = 'info-bar';
+  document.getElementById('checkPanel').className = 'sidebar-card';
+
+  fetch('/api/search?q=' + encodeURIComponent(q))
+    .then(r => { if (!r.ok) throw new Error('서버 오류 ' + r.status); return r.json(); })
+    .then(data => render(data))
+    .catch(err => {
+      document.getElementById('resultsList').innerHTML =
+        `<div class="state-box"><div class="state-icon">⚠</div><div class="state-msg">오류: ${esc(err.message)}</div></div>`;
+    });
+}
+
+// ── 렌더링 ──
+function render(data) {
+  renderInfoBar(data);
+  renderCheckItems(data);
+  renderResults(data);
+}
+
+function renderInfoBar(data) {
+  const bar = document.getElementById('infoBar');
+  if (!data.matched_rules || !data.matched_rules.length) { bar.className = 'info-bar'; return; }
+
+  let html = '<span>발동 규칙:</span>';
+  data.matched_rules.forEach(r => { html += `<span class="rule-tag">${esc(r)}</span>`; });
+
+  if (data.expanded_terms && data.expanded_terms.length) {
+    html += '<span class="info-sep">|</span><span>확장 키워드:</span>';
+    data.expanded_terms.slice(0, 10).forEach(t => { html += `<span class="kw-tag">${esc(t)}</span>`; });
+    if (data.expanded_terms.length > 10) {
+      html += `<span style="color:#94a3b8">+${data.expanded_terms.length - 10}개</span>`;
+    }
+  }
+  bar.innerHTML = html;
+  bar.className = 'info-bar visible';
+}
+
+function renderCheckItems(data) {
+  const panel = document.getElementById('checkPanel');
+  const list  = document.getElementById('checkList');
+  if (!data.check_items || !data.check_items.length) { panel.className = 'sidebar-card'; return; }
+
+  list.innerHTML = data.check_items.map((item, i) =>
+    `<div class="check-item">
+       <input type="checkbox" id="ci${i}">
+       <label for="ci${i}">${esc(item)}</label>
+     </div>`
+  ).join('');
+  panel.className = 'sidebar-card visible';
+}
+
+function renderResults(data) {
+  const meta = document.getElementById('resultsMeta');
+  const list = document.getElementById('resultsList');
+
+  if (!data.results || !data.results.length) {
+    list.innerHTML =
+      '<div class="state-box"><div class="state-icon">😶</div>' +
+      '<div class="state-msg">검색 결과가 없습니다.</div>' +
+      '<div class="state-sub">다른 표현이나 키워드로 다시 시도해 보세요.</div></div>';
+    meta.style.display = 'none';
+    return;
+  }
+
+  meta.textContent = `"${data.query}" 검색 결과: ${data.results.length}건`;
+  meta.style.display = 'block';
+
+  const allTerms = [...(data.original_terms || []), ...(data.expanded_terms || [])];
+
+  list.innerHTML = data.results.map(r => {
+    const color    = CAT_COLOR[r.category]  || '#e2e8f0';
+    const catCls   = CAT_CLASS[r.category]  || '';
+    const catLabel = CAT_LABEL[r.category]  || r.category;
+    const sc       = scoreClass(r.score);
+
+    const contextHtml = r.context
+      ? `<div class="card-context">${highlight(r.context, allTerms)}</div>` : '';
+
+    const termsHtml = r.matched_terms && r.matched_terms.length
+      ? `<div class="term-list">${r.matched_terms.map(t =>
+          `<span class="term-chip">${esc(t)}</span>`).join('')}</div>` : '';
+
+    return `
+    <div class="result-card" style="border-left-color:${color}">
+      <div class="card-top">
+        <span class="score-badge ${sc}">★ ${r.score}</span>
+        <span class="cat-badge ${catCls}">${esc(catLabel)}</span>
+        <span class="match-label">${esc(r.match_type)}</span>
+      </div>
+      <div class="card-title">${esc(r.display_name)}</div>
+      ${r.location ? `<div class="card-location">${esc(r.location)}</div>` : ''}
+      ${contextHtml}
+      ${termsHtml}
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

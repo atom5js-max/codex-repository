@@ -7,6 +7,9 @@ pdfplumber>=0.10.0
 # 대체: 가벼운 환경이나 pdfplumber 설치 어려울 때
 # pypdf>=4.0.0
 
+# 웹 대시보드 (HTML 검색 UI)
+flask>=3.0.0
+
 # Stage B: 벡터 검색 추가 시 (현재 불필요)
 # sentence-transformers>=2.7.0
 # faiss-cpu>=1.8.0
