@@ -46,11 +46,15 @@ def _boot_load() -> list:
                 and not fp.name.startswith(".")
             )
 
+    print(f"[1/3] Checking cache... ({len(expected)} files found)")
     cached = load_cache(CACHE_FILE, expected)
     if cached is not None:
+        print(f"[2/3] Cache loaded — {len(cached)} documents ready")
         return cached
 
+    print("[2/3] Loading documents... (PDF may take 30+ seconds)")
     docs = load_all_documents(_BASE)
+    print(f"[3/3] Done — {len(docs)} documents loaded, saving cache...")
     if docs:
         save_cache(docs, CACHE_FILE)
     return docs
