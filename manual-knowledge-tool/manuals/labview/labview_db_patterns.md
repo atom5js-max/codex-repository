@@ -96,7 +96,7 @@ Simple Error Handler 또는 General Error Handler 로 에러 코드와 메시지
 ## 6. DB Insert 성능 참고값
 
 | 방식 | 대략적 속도 |
-|-----|-----------|
+|-----|-------------|
 | 매 루프 Open/Close + Execute SQL | 100~500 ms/건 |
 | 연결 유지 + Execute SQL | 10~50 ms/건 |
 | 연결 유지 + Prepared Statement | 1~10 ms/건 |

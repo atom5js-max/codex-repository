@@ -169,7 +169,7 @@ Consumer Loop : Queue에서 Dequeue → DB Insert
 ### SQL Insert 성능 (경험치)
 
 | 방식 | 대략적 Insert 속도 |
-|-----|-----------------|
+|-----|------------------|
 | 매번 연결 + Execute SQL | 수백 ms/건 |
 | 연결 유지 + Execute SQL | 10~50 ms/건 |
 | 연결 유지 + Prepared Statement | 1~10 ms/건 |
