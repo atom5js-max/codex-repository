@@ -36,6 +36,23 @@ _HEADER_WEIGHT = 1.5
 # 이 길이 이하인 용어는 단어 경계(\b) 매칭 사용 (오매칭 방지)
 _WHOLE_WORD_THRESHOLD = 4
 
+# 청크 내 동일 용어 출현 횟수 상한 — 빈도 폭등으로 점수 왜곡 방지
+# (예: PLC 명령어집의 "DB"가 한 청크에 16번 등장해 LabVIEW 문서를 밀어내는 현상)
+_MAX_TERM_COUNT = 3
+
+# 문제 상황 서술어 — 기술 용어가 아니라 거의 모든 문서에 등장해 노이즈가 됨
+# 원본 쿼리 토큰에서만 제외하고, synonym_rules에서 온 expanded_terms는 제외 안 함
+_KO_STOPWORDS = frozenset({
+    "이상",   # "이상 발생" — 거의 모든 고장 관련 문서에 등장
+    "안됨",   # "안 됨" 붙여쓰기 변형
+    "먹음",   # "안 먹음" 에서 분리된 비공식 표현
+    "느림",   # "저장 느림" 서술어
+    "틀림",   # "값 틀림" 서술어
+    "있음",   # "에러 있음" 서술어
+    "없음",   # "결과 없음" 서술어
+    "저장",   # "저장" 단독으로는 LabVIEW 외 문서에도 다수 등장
+})
+
 
 @dataclass
 class MatchedTerm:
@@ -92,6 +109,23 @@ def _should_use_whole_word(term: str) -> bool:
 
 def _has_header(text: str) -> bool:
     return bool(_HEADER_RE.search(text))
+
+
+def _filename_bonus(file_path, original_terms: list[str]) -> float:
+    """
+    검색어 토큰이 파일명에 포함되면 보너스 점수를 반환한다.
+    예: "FD-AM" 검색 시 "2023FD-AM시리즈+모드버스+protocal.pdf" 에 +3.0
+    """
+    stem = file_path.stem.lower()
+    bonus = 0.0
+    for term in original_terms:
+        if len(term) < 2:
+            continue
+        if term.lower() in _KO_STOPWORDS:
+            continue
+        if len(term) >= 3 and term.lower() in stem:
+            bonus += 3.0
+    return bonus
 
 
 def _extract_context(text: str, term: str, context_chars: int = 120) -> str:
@@ -163,12 +197,14 @@ def search_documents(
             matched_terms: list[MatchedTerm] = []
             score = 0.0
 
-            # 원본 검색어 매칭
+            # 원본 검색어 매칭 (불용어·단일 서술어 제외)
             for term in expanded_query.original_terms:
                 if len(term) < 2:
                     continue
+                if term.lower() in _KO_STOPWORDS:
+                    continue
                 whole = _should_use_whole_word(term)
-                cnt = _count_occurrences(chunk.text, term, whole_word=whole)
+                cnt = min(_count_occurrences(chunk.text, term, whole_word=whole), _MAX_TERM_COUNT)
                 if cnt > 0:
                     matched_terms.append(
                         MatchedTerm(term=term, match_type="original", count=cnt)
@@ -180,7 +216,7 @@ def search_documents(
                 if len(term) < 2:
                     continue
                 whole = _should_use_whole_word(term)
-                cnt = _count_occurrences(chunk.text, term, whole_word=whole)
+                cnt = min(_count_occurrences(chunk.text, term, whole_word=whole), _MAX_TERM_COUNT)
                 if cnt > 0:
                     matched_terms.append(
                         MatchedTerm(term=term, match_type="expanded", count=cnt)
@@ -193,6 +229,9 @@ def search_documents(
             # 헤더 포함 청크 가중치
             if _has_header(chunk.text):
                 score *= _HEADER_WEIGHT
+
+            # 검색어 토큰이 파일명에 포함된 경우 보너스
+            score += _filename_bonus(doc.file_path, expanded_query.original_terms)
 
             # 파일당 최대 결과 수 제한
             if file_counts[file_key] >= max_per_file:

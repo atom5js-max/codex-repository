@@ -249,8 +249,11 @@ plc_io_check:
   field_terms:
     - PLC 입력 안 읽힘
     - DI 안 들어옴
+    - DI 신호 안 들어옴
     - 입력 신호 안 읽힘
+    - 입력 신호 안 들어옴
     - DO 안 나옴
+    - DO 신호 안 나옴
     - 출력 안 나옴
     - PLC IO 이상
   manual_terms:
@@ -283,6 +286,10 @@ pressure_sensor_issue:
     - 압력 0 안 나옴
     - 압력 튐
     - 압력 값 안 바뀜
+    - 압력 트랜스미터 이상
+    - 압력 트랜스미터
+    - 압력계 이상
+    - 압력 4-20mA 이상
   manual_terms:
     - Pressure Transmitter
     - 4-20mA
