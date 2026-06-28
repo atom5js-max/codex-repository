@@ -47,7 +47,7 @@ def _boot_load() -> list:
     docs = load_all_documents(_BASE)
     print(f"[3/3] Done - {len(docs)} documents loaded, saving cache...")
     if docs:
-        save_cache(docs, CACHE_FILE)
+        save_cache(docs, CACHE_FILE, expected)
     return docs
 
 
