@@ -167,7 +167,7 @@ def run_search(query: str, args: argparse.Namespace) -> None:
             terms_str = ", ".join(r.all_matched_term_strings[:3])
             print(
                 f"  [{i}] [{r.document.category}] {r.document.display_name}"
-                f" — {terms_str} (점수: {r.score:.1f})"
+                f" - {terms_str} (점수: {r.score:.1f})"
             )
     else:
         print("  검색 결과 없음")
@@ -213,7 +213,7 @@ def run_interactive() -> None:
             for i, r in enumerate(results[:5], 1):
                 print(
                     f"  [{i}] [{r.document.category}] {r.document.display_name}"
-                    f" — {', '.join(r.all_matched_term_strings[:2])} (점수: {r.score:.1f})"
+                    f" - {', '.join(r.all_matched_term_strings[:2])} (점수: {r.score:.1f})"
                 )
         else:
             print("  결과 없음")
