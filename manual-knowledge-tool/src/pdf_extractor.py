@@ -58,6 +58,7 @@ def _run_with_timeout(fn, file_path: Path, timeout: int) -> list[tuple[int, str]
 
 def extract_pdf_text(file_path: Path) -> list[tuple[int, str]]:
     # ── pdfplumber (타임아웃 적용) ──────────────────────────────────
+    # ── pdfplumber (타임아웃 적용) ──────────────────────────────────────
     try:
         result = _run_with_timeout(_extract_with_pdfplumber, file_path, _PDF_TIMEOUT)
         if result is not None:
@@ -70,6 +71,7 @@ def extract_pdf_text(file_path: Path) -> list[tuple[int, str]]:
         logger.warning("pdfplumber 추출 실패 (%s): %s", file_path.name, e)
 
     # ── pypdf 대체 (타임아웃 적용) ───────────────────────────────
+    # ── pypdf 대체 (타임아웃 적용) ─────────────────────────────────────
     try:
         result = _run_with_timeout(_extract_with_pypdf, file_path, _PDF_TIMEOUT)
         if result is not None:
