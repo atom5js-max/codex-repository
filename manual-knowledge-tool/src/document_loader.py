@@ -117,11 +117,11 @@ def load_all_documents(base_dir: Path) -> list[Document]:
 
     documents: list[Document] = []
 
+    all_files = []
     for root in search_roots:
         if not root.exists():
             logger.warning("폴더가 없음, 스킵: %s", root)
             continue
-
         for file_path in sorted(root.rglob("*")):
             if not file_path.is_file():
                 continue
@@ -129,14 +129,19 @@ def load_all_documents(base_dir: Path) -> list[Document]:
                 continue
             if file_path.name.startswith(".") or file_path.name.startswith("~"):
                 continue
+            all_files.append(file_path)
 
-            doc = _load_single_file(file_path, base_dir)
-            if doc is not None:
-                documents.append(doc)
-                logger.debug(
-                    "로드 완료: [%s] %s (%d chunks)",
-                    doc.category, doc.display_name, len(doc.chunks),
-                )
+    for idx, file_path in enumerate(all_files, start=1):
+        suffix = file_path.suffix.lower()
+        print(f"  [{idx}/{len(all_files)}] {file_path.name}"
+              + (" (PDF — 최대 20초)" if suffix == ".pdf" else ""))
+        doc = _load_single_file(file_path, base_dir)
+        if doc is not None:
+            documents.append(doc)
+            logger.debug(
+                "로드 완료: [%s] %s (%d chunks)",
+                doc.category, doc.display_name, len(doc.chunks),
+            )
 
     logger.info("총 %d개 파일 로드 완료", len(documents))
     return documents
