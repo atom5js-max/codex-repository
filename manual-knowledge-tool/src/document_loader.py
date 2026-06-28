@@ -134,7 +134,7 @@ def load_all_documents(base_dir: Path) -> list[Document]:
     for idx, file_path in enumerate(all_files, start=1):
         suffix = file_path.suffix.lower()
         print(f"  [{idx}/{len(all_files)}] {file_path.name}"
-              + (" (PDF — 최대 20초)" if suffix == ".pdf" else ""))
+              + (" (PDF - 최대 20초)" if suffix == ".pdf" else ""))
         doc = _load_single_file(file_path, base_dir)
         if doc is not None:
             documents.append(doc)
