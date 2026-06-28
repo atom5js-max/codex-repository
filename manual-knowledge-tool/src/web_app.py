@@ -1,24 +1,15 @@
-"""
-web_app.py
-----------
-Flask 기반 웹 검색 대시보드.
-
-실행:
-  cd manual-knowledge-tool/src
-  python web_app.py
-
-또는 루트의 start_web.bat 더블클릭
-"""
+"""Flask 기반 전자제품 매뉴얼 검색 웹 애플리케이션."""
 
 from __future__ import annotations
 
+import os
 import sys
 import webbrowser
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
 
-_SRC  = Path(__file__).parent
+_SRC = Path(__file__).parent
 _BASE = _SRC.parent
 sys.path.insert(0, str(_SRC))
 
@@ -28,13 +19,12 @@ from keyword_search import KeywordSearcher
 from synonym_expander import expand_query
 
 SYNONYM_RULES = _BASE / "rules" / "synonym_rules.yaml"
-SEARCH_RULES  = _BASE / "rules" / "search_rules.yaml"
-CACHE_FILE    = get_cache_path(_BASE)
+SEARCH_RULES = _BASE / "rules" / "search_rules.yaml"
+CACHE_FILE = get_cache_path(_BASE)
 
 app = Flask(__name__)
 
 
-# ── 시작 시 문서 1회 로드 ─────────────────────────────────────────────
 def _boot_load() -> list:
     supported = {".md", ".txt", ".pdf"}
     expected: list[Path] = []
@@ -42,7 +32,8 @@ def _boot_load() -> list:
         if root.exists():
             expected.extend(
                 fp for fp in root.rglob("*")
-                if fp.is_file() and fp.suffix.lower() in supported
+                if fp.is_file()
+                and fp.suffix.lower() in supported
                 and not fp.name.startswith(".")
             )
 
@@ -61,7 +52,7 @@ def _boot_load() -> list:
 
 
 _documents = _boot_load()
-_searcher  = KeywordSearcher()
+_searcher = KeywordSearcher()
 
 
 def _load_search_cfg() -> dict:
@@ -75,10 +66,14 @@ def _load_search_cfg() -> dict:
     return {}
 
 
-# ── 라우트 ───────────────────────────────────────────────────────────
 @app.route("/")
 def index():
     return render_template("index.html", doc_count=len(_documents))
+
+
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok", "documents": len(_documents)})
 
 
 @app.route("/api/search")
@@ -90,9 +85,9 @@ def api_search():
             "original_terms": [], "expanded_terms": [], "check_items": [],
         })
 
-    cfg      = _load_search_cfg()
+    cfg = _load_search_cfg()
     expanded = expand_query(q, SYNONYM_RULES)
-    results  = _searcher.search(
+    results = _searcher.search(
         documents=_documents,
         expanded_query=expanded,
         max_results=cfg.get("max_results", 20),
@@ -102,24 +97,24 @@ def api_search():
     )
 
     out = []
-    for r in results:
+    for result in results:
         out.append({
-            "score":         round(r.score, 2),
-            "category":      r.document.category,
-            "display_name":  r.document.display_name,
-            "match_type":    r.match_type_label,
-            "matched_terms": r.all_matched_term_strings,
-            "context":       r.chunk.source_info.get("context_excerpt", ""),
-            "location":      r.chunk.source_info.get("location", ""),
+            "score": round(result.score, 2),
+            "category": result.document.category,
+            "display_name": result.document.display_name,
+            "match_type": result.match_type_label,
+            "matched_terms": result.all_matched_term_strings,
+            "context": result.chunk.source_info.get("context_excerpt", ""),
+            "location": result.chunk.source_info.get("location", ""),
         })
 
     return jsonify({
-        "query":          q,
+        "query": q,
         "original_terms": expanded.original_terms,
         "expanded_terms": expanded.expanded_terms,
-        "matched_rules":  expanded.matched_rules,
-        "check_items":    expanded.check_items,
-        "results":        out,
+        "matched_rules": expanded.matched_rules,
+        "check_items": expanded.check_items,
+        "results": out,
     })
 
 
@@ -133,11 +128,18 @@ def api_files():
 
 
 if __name__ == "__main__":
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "5000"))
+    open_browser = os.environ.get("OPEN_BROWSER", "1") == "1"
+
     print("=" * 55)
     print("  기술자료 검색 대시보드 시작")
     print(f"  문서 {len(_documents)}개 로드 완료")
-    print("  브라우저: http://localhost:5000")
-    print("  종료:    Ctrl+C")
+    print(f"  로컬 접속: http://localhost:{port}")
+    print(f"  서버 바인딩: {host}:{port}")
+    print("  종료: Ctrl+C")
     print("=" * 55)
-    webbrowser.open("http://localhost:5000")
-    app.run(host="127.0.0.1", port=5000, debug=False)
+
+    if open_browser:
+        webbrowser.open(f"http://localhost:{port}")
+    app.run(host=host, port=port, debug=False)
