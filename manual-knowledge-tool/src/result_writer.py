@@ -2,11 +2,6 @@
 result_writer.py
 ----------------
 검색 결과를 Markdown 파일로 저장한다.
-
-출력 형식:
-  - 검색어 요약 (원본 / 발동 규칙 / 확장 키워드)
-  - 결과 목록 (제품군, 파일명, 위치, 매칭 키워드, 주변 문장)
-  - 현장 확인 항목 (단정적 지시 없이 확인 목록 형태)
 """
 
 from __future__ import annotations
@@ -19,7 +14,6 @@ from keyword_search import SearchResult
 from synonym_expander import ExpandedQuery
 
 
-# 카테고리 한글 표시명
 _CATEGORY_LABELS: dict[str, str] = {
     "inverter":    "인버터",
     "plc":         "PLC",
@@ -31,21 +25,28 @@ _CATEGORY_LABELS: dict[str, str] = {
     "unknown":     "기타",
 }
 
-# 규칙 이름 한글 표시명
 _RULE_LABELS: dict[str, str] = {
-    "speed_command_problem": "속도지령 문제",
-    "loadcell_noise":        "로드셀 노이즈",
-    "modbus_comm_problem":   "Modbus 통신 문제",
-    "labview_db_slow":       "LabVIEW DB 지연",
-    "analog_input_issue":    "아날로그 입력 이상",
-    "power_meter_pulse":     "전력량계 펄스",
-    "inverter_trip":         "인버터 트립",
-    "plc_io_check":          "PLC IO 이상",
+    "speed_command_problem":   "속도지령 문제",
+    "loadcell_noise":          "로드셀 노이즈",
+    "modbus_comm_problem":     "Modbus 통신 문제",
+    "labview_db_slow":         "LabVIEW DB 지연",
+    "analog_input_issue":      "아날로그 입력 이상",
+    "power_meter_pulse":       "전력량계 펄스",
+    "inverter_trip":           "인버터 트립",
+    "plc_io_check":            "PLC IO 이상",
+    "pressure_sensor_issue":   "압력 센서 이상",
+    "temperature_sensor_issue":"온도 센서 이상",
+    "inverter_accel_problem":  "인버터 가속 문제",
+    "hmi_comm_problem":        "HMI 통신 문제",
+    "plc_program_error":       "PLC 프로그램 오류",
+    "calibration_general":     "교정/캘리브레이션",
+    "flowmeter_issue":         "유량계 이상",
+    "inverter_speed_no_change":"인버터 속도 미변경",
+    "plc_scan_slow":           "PLC 스캔 느림",
 }
 
 
 def _bold_terms(text: str, terms: list[str]) -> str:
-    """텍스트에서 매칭 단어를 **굵게** 강조한다."""
     for term in sorted(terms, key=len, reverse=True):
         pattern = re.compile(re.escape(term), re.IGNORECASE)
         text = pattern.sub(f"**{term}**", text)
@@ -53,7 +54,6 @@ def _bold_terms(text: str, terms: list[str]) -> str:
 
 
 def _format_location(result: SearchResult) -> str:
-    """청크 위치 정보를 문자열로 반환한다."""
     chunk = result.chunk
     parts = []
     if chunk.page_number is not None:
@@ -63,7 +63,6 @@ def _format_location(result: SearchResult) -> str:
 
 
 def _format_result_block(result: SearchResult, index: int, highlight: bool = True) -> str:
-    """단일 검색 결과를 Markdown 블록으로 포맷한다."""
     doc = result.document
     chunk = result.chunk
 
@@ -77,7 +76,6 @@ def _format_result_block(result: SearchResult, index: int, highlight: bool = Tru
     if highlight:
         excerpt = _bold_terms(excerpt, result.all_matched_term_strings)
 
-    # 코드블록/테이블이 포함된 경우 pre 블록으로 감싸지 않고 그대로 유지
     lines = [
         f"### [{index}] {category_label} — `{file_name}`",
         f"",
@@ -108,22 +106,10 @@ def write_results(
     highlight: bool = True,
     summary: str | None = None,
 ) -> None:
-    """
-    검색 결과를 Markdown 파일로 저장한다.
-
-    Parameters
-    ----------
-    results        : keyword_search 가 반환한 결과 목록
-    expanded_query : 확장 쿼리 정보 (원본·확장어·체크항목)
-    output_path    : 저장할 파일 경로
-    include_timestamp : 타임스탬프 포함 여부
-    highlight      : 매칭 단어 강조 여부
-    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     lines: list[str] = []
 
-    # ── 헤더 ──────────────────────────────────────────────
     lines.append("# 기술자료 검색 결과")
     lines.append("")
 
@@ -132,7 +118,6 @@ def write_results(
         lines.append(f"**검색 시각**: {ts}")
         lines.append("")
 
-    # ── 검색어 요약 ────────────────────────────────────────
     lines.append("## 검색어 요약")
     lines.append("")
     lines.append(f"**입력 쿼리**: `{expanded_query.original_query}`")
@@ -162,7 +147,6 @@ def write_results(
     lines.append("---")
     lines.append("")
 
-    # ── LLM 요약 (Stage C 활성 시) ────────────────────────
     if summary:
         lines.append("## AI 요약 (참고용)")
         lines.append("")
@@ -176,7 +160,6 @@ def write_results(
         lines.append("---")
         lines.append("")
 
-    # ── 검색 결과 목록 ─────────────────────────────────────
     lines.append("## 검색 결과")
     lines.append("")
 
@@ -190,7 +173,6 @@ def write_results(
 
     lines.append("")
 
-    # ── 현장 확인 항목 ─────────────────────────────────────
     if expanded_query.check_items:
         lines.append("## 현장 확인 항목")
         lines.append("")
@@ -207,7 +189,6 @@ def write_results(
         lines.append("---")
         lines.append("")
 
-    # ── 푸터 ──────────────────────────────────────────────
     lines.append("*이 결과는 현장어-매뉴얼어 확장 검색 도구가 자동 생성했습니다.*")
     lines.append("*원인 단정 및 최종 조치는 반드시 담당 엔지니어가 확인하십시오.*")
     lines.append("")

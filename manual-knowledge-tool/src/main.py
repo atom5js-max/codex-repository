@@ -74,21 +74,8 @@ def _load_search_config() -> dict:
 
 
 def _get_searcher(backend: str) -> BaseSearcher:
-    """
-    --backend 값에 따라 검색 백엔드를 반환한다.
-    Stage B 구현 시 'vector', 'hybrid' 케이스를 추가한다.
-    """
     if backend == "keyword":
         return KeywordSearcher()
-
-    # Stage B: vector / hybrid 백엔드 예정
-    # elif backend == "vector":
-    #     from vector_search import VectorSearcher
-    #     return VectorSearcher()
-    # elif backend == "hybrid":
-    #     from hybrid_search import HybridSearcher
-    #     return HybridSearcher()
-
     print(f"  경고: 알 수 없는 백엔드 '{backend}', keyword 로 폴백")
     return KeywordSearcher()
 
@@ -96,7 +83,6 @@ def _get_searcher(backend: str) -> BaseSearcher:
 def _load_documents(use_cache: bool = True) -> list:
     """캐시를 확인하고 없으면 실제 파싱 후 캐시에 저장한다."""
     if use_cache:
-        # 먼저 파일 목록만 수집해 캐시 유효성 체크
         supported = {".md", ".txt", ".pdf"}
         expected: list[Path] = []
         for root in [_BASE_DIR / "manuals", _BASE_DIR / "notes"]:
@@ -112,7 +98,6 @@ def _load_documents(use_cache: bool = True) -> list:
             print(f"  캐시 히트: {len(cached)}개 파일 (재파싱 생략)")
             return cached
 
-    # 캐시 미스 → 실제 파싱
     documents = load_all_documents(_BASE_DIR)
 
     if use_cache and documents:
@@ -131,7 +116,6 @@ def run_search(query: str, args: argparse.Namespace) -> None:
 
     print(f"\n[검색어] {query}")
 
-    # 1단계: 문서 로드
     print("[1/5] 문서 로드 중...")
     use_cache = not getattr(args, "no_cache", False)
     documents = _load_documents(use_cache=use_cache)
@@ -141,7 +125,6 @@ def run_search(query: str, args: argparse.Namespace) -> None:
             "  manuals/ 또는 notes/ 폴더에 .md/.txt/.pdf 파일을 추가하세요."
         )
 
-    # 2단계: 검색어 확장
     print("[2/5] 현장어 → 매뉴얼어 확장 중...")
     expanded = expand_query(query, SYNONYM_RULES)
     if expanded.matched_rules:
@@ -150,7 +133,6 @@ def run_search(query: str, args: argparse.Namespace) -> None:
     else:
         print("  발동 규칙 없음 (원본 키워드로만 검색)")
 
-    # 3단계: 검색
     print(f"[3/5] 키워드 검색 중 (backend: {args.backend})...")
     searcher = _get_searcher(args.backend)
     results = searcher.search(
@@ -163,7 +145,6 @@ def run_search(query: str, args: argparse.Namespace) -> None:
     )
     print(f"  결과 {len(results)}건 발견")
 
-    # 4단계: 요약 (Stage C, 현재 비활성)
     print("[4/5] 요약 생성 중...")
     summary = summarize(results, query, expanded)
     if summary:
@@ -171,7 +152,6 @@ def run_search(query: str, args: argparse.Namespace) -> None:
     else:
         print("  요약 비활성 (Stage C)")
 
-    # 5단계: 결과 저장
     print("[5/5] 결과 저장 중...")
     write_results(
         results=results,
@@ -180,7 +160,6 @@ def run_search(query: str, args: argparse.Namespace) -> None:
         summary=summary,
     )
 
-    # 터미널 요약 출력
     print("\n" + "=" * 60)
     if results:
         print("상위 결과 (최대 5건):")
@@ -265,7 +244,6 @@ def run_stats() -> None:
     print("문서 통계")
     print(f"{'=' * 50}")
 
-    # 카테고리별 집계
     from collections import Counter
     cat_count: Counter = Counter()
     chunk_count: Counter = Counter()

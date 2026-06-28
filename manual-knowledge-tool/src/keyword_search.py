@@ -29,42 +29,34 @@ from document_loader import Document
 from synonym_expander import ExpandedQuery
 from text_chunker import Chunk
 
-# 헤더 패턴 (마크다운 h1~h3)
 _HEADER_RE = re.compile(r"^#{1,3}\s+", re.MULTILINE)
 _HEADER_WEIGHT = 1.5
 
-# 이 길이 이하인 용어는 단어 경계(\b) 매칭 사용 (오매칭 방지)
 _WHOLE_WORD_THRESHOLD = 4
 
-# 청크 내 동일 용어 출현 횟수 상한 — 빈도 폭등으로 점수 왜곡 방지
-# (예: PLC 명령어집의 "DB"가 한 청크에 16번 등장해 LabVIEW 문서를 밀어내는 현상)
 _MAX_TERM_COUNT = 3
 
-# 문제 상황 서술어 — 기술 용어가 아니라 거의 모든 문서에 등장해 노이즈가 됨
-# 원본 쿼리 토큰에서만 제외하고, synonym_rules에서 온 expanded_terms는 제외 안 함
 _KO_STOPWORDS = frozenset({
-    "이상",   # "이상 발생" — 거의 모든 고장 관련 문서에 등장
-    "안됨",   # "안 됨" 붙여쓰기 변형
-    "먹음",   # "안 먹음" 에서 분리된 비공식 표현
-    "느림",   # "저장 느림" 서술어
-    "틀림",   # "값 틀림" 서술어
-    "있음",   # "에러 있음" 서술어
-    "없음",   # "결과 없음" 서술어
-    "저장",   # "저장" 단독으로는 LabVIEW 외 문서에도 다수 등장
+    "이상",
+    "안됨",
+    "먹음",
+    "느림",
+    "틀림",
+    "있음",
+    "없음",
+    "저장",
 })
 
 
 @dataclass
 class MatchedTerm:
-    """하나의 매칭 결과."""
     term: str
-    match_type: str   # 'original' | 'expanded'
-    count: int        # 청크 내 매칭 횟수
+    match_type: str
+    count: int
 
 
 @dataclass
 class SearchResult:
-    """단일 검색 결과 레코드."""
     document: Document
     chunk: Chunk
     matched_terms: list[MatchedTerm]
@@ -85,17 +77,7 @@ class SearchResult:
         return [m.term for m in self.matched_terms]
 
 
-def _count_occurrences(
-    text: str,
-    term: str,
-    whole_word: bool = False,
-) -> int:
-    """
-    텍스트 안에서 term 등장 횟수를 반환한다.
-
-    whole_word=True 이면 단어 경계(\b) 매칭으로
-    짧은 용어의 부분 매칭(DB→Modbus 등)을 방지한다.
-    """
+def _count_occurrences(text: str, term: str, whole_word: bool = False) -> int:
     if whole_word:
         pattern = re.compile(r"\b" + re.escape(term) + r"\b", re.IGNORECASE)
         return len(pattern.findall(text))
@@ -103,7 +85,6 @@ def _count_occurrences(
 
 
 def _should_use_whole_word(term: str) -> bool:
-    """영문/숫자로만 구성된 짧은 용어는 단어 경계 매칭을 사용한다."""
     return len(term) <= _WHOLE_WORD_THRESHOLD and re.match(r"^[A-Za-z0-9]+$", term) is not None
 
 
@@ -112,10 +93,6 @@ def _has_header(text: str) -> bool:
 
 
 def _filename_bonus(file_path, original_terms: list[str]) -> float:
-    """
-    검색어 토큰이 파일명에 포함되면 보너스 점수를 반환한다.
-    예: "FD-AM" 검색 시 "2023FD-AM시리즈+모드버스+protocal.pdf" 에 +3.0
-    """
     stem = file_path.stem.lower()
     bonus = 0.0
     for term in original_terms:
@@ -129,7 +106,6 @@ def _filename_bonus(file_path, original_terms: list[str]) -> float:
 
 
 def _extract_context(text: str, term: str, context_chars: int = 120) -> str:
-    """term 이 처음 등장하는 위치 기준으로 앞뒤를 반환한다."""
     idx = text.lower().find(term.lower())
     if idx == -1:
         return text[: context_chars * 2].strip()
@@ -180,9 +156,6 @@ def search_documents(
     context_chars: int = 120,
     expanded_weight: float = 0.7,
 ) -> list[SearchResult]:
-    """
-    모든 Document 의 청크를 검색해 점수 내림차순으로 정렬된 결과를 반환한다.
-    """
     results: list[SearchResult] = []
     file_counts: dict[str, int] = {}
 
@@ -197,7 +170,6 @@ def search_documents(
             matched_terms: list[MatchedTerm] = []
             score = 0.0
 
-            # 원본 검색어 매칭 (불용어·단일 서술어 제외)
             for term in expanded_query.original_terms:
                 if len(term) < 2:
                     continue
@@ -211,7 +183,6 @@ def search_documents(
                     )
                     score += cnt * 1.0
 
-            # 확장 검색어 매칭
             for term in expanded_query.expanded_terms:
                 if len(term) < 2:
                     continue
@@ -226,19 +197,15 @@ def search_documents(
             if not matched_terms:
                 continue
 
-            # 헤더 포함 청크 가중치
             if _has_header(chunk.text):
                 score *= _HEADER_WEIGHT
 
-            # 검색어 토큰이 파일명에 포함된 경우 보너스
             score += _filename_bonus(doc.file_path, expanded_query.original_terms)
 
-            # 파일당 최대 결과 수 제한
             if file_counts[file_key] >= max_per_file:
                 continue
             file_counts[file_key] += 1
 
-            # 컨텍스트 추출
             first_term = matched_terms[0].term
             chunk.source_info["context_excerpt"] = _extract_context(
                 chunk.text, first_term, context_chars

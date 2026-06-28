@@ -13,7 +13,6 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# 페이지당 최소 텍스트 길이 (이 미만은 스캔 이미지로 판단)
 _MIN_PAGE_TEXT = 30
 
 
@@ -44,13 +43,6 @@ def _extract_with_pypdf(file_path: Path) -> list[tuple[int, str]]:
 
 
 def extract_pdf_text(file_path: Path) -> list[tuple[int, str]]:
-    """
-    PDF 파일을 열고 페이지별 텍스트를 반환한다.
-
-    반환값: [(페이지번호, 텍스트), ...] — 텍스트가 있는 페이지만 포함
-    텍스트 추출 불가(스캔 전용 PDF 등) 시 빈 리스트 반환.
-    """
-    # pdfplumber 시도
     try:
         return _extract_with_pdfplumber(file_path)
     except ImportError:
@@ -58,7 +50,6 @@ def extract_pdf_text(file_path: Path) -> list[tuple[int, str]]:
     except Exception as e:
         logger.warning("pdfplumber 추출 실패 (%s): %s", file_path.name, e)
 
-    # pypdf 대체
     try:
         return _extract_with_pypdf(file_path)
     except ImportError:

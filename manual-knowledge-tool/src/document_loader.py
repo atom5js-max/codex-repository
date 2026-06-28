@@ -20,7 +20,6 @@ from text_chunker import Chunk, chunk_text
 logger = logging.getLogger(__name__)
 
 
-# 경로 조각 → 카테고리 이름 매핑 (우선순위: 더 구체적인 것 먼저)
 _CATEGORY_MAP: dict[str, str] = {
     "inverter":    "inverter",
     "plc":         "plc",
@@ -36,8 +35,8 @@ _CATEGORY_MAP: dict[str, str] = {
 class Document:
     """로드된 단일 문서를 나타낸다."""
     file_path: Path
-    category: str          # 'inverter', 'plc', 'notes' 등
-    file_type: str         # 'md', 'txt', 'pdf'
+    category: str
+    file_type: str
     chunks: list[Chunk] = field(default_factory=list)
 
     @property
@@ -46,14 +45,12 @@ class Document:
 
 
 def _infer_category(file_path: Path, base_dir: Path) -> str:
-    """파일 경로의 상위 디렉터리 이름으로 카테고리를 추론한다."""
     try:
         relative = file_path.relative_to(base_dir)
     except ValueError:
         relative = file_path
 
-    # 경로의 각 부분을 순서대로 확인
-    for part in relative.parts[:-1]:  # 파일명 제외
+    for part in relative.parts[:-1]:
         part_lower = part.lower()
         for key, category in _CATEGORY_MAP.items():
             if key in part_lower:
@@ -63,7 +60,6 @@ def _infer_category(file_path: Path, base_dir: Path) -> str:
 
 
 def _read_text_file(file_path: Path) -> Optional[str]:
-    """텍스트 파일(.md / .txt)을 읽어 문자열로 반환한다."""
     encodings = ["utf-8", "utf-8-sig", "cp949", "euc-kr"]
     for enc in encodings:
         try:
@@ -75,7 +71,6 @@ def _read_text_file(file_path: Path) -> Optional[str]:
 
 
 def _load_single_file(file_path: Path, base_dir: Path) -> Optional[Document]:
-    """단일 파일을 Document로 변환한다."""
     suffix = file_path.suffix.lower().lstrip(".")
     category = _infer_category(file_path, base_dir)
 
@@ -90,7 +85,6 @@ def _load_single_file(file_path: Path, base_dir: Path) -> Optional[Document]:
         if not pages:
             logger.info("PDF 텍스트 없음(스캔 이미지 추정), 스킵: %s", file_path)
             return None
-        # 페이지별 텍스트를 청킹해서 합친다
         chunks = []
         for page_no, page_text in pages:
             page_chunks = chunk_text(
@@ -101,7 +95,7 @@ def _load_single_file(file_path: Path, base_dir: Path) -> Optional[Document]:
             chunks.extend(page_chunks)
 
     else:
-        return None  # 지원하지 않는 포맷
+        return None
 
     if not chunks:
         return None
@@ -115,10 +109,6 @@ def _load_single_file(file_path: Path, base_dir: Path) -> Optional[Document]:
 
 
 def load_all_documents(base_dir: Path) -> list[Document]:
-    """
-    base_dir 아래의 manuals/ 와 notes/ 폴더에서
-    지원 파일을 재귀적으로 로드해 Document 목록을 반환한다.
-    """
     supported_suffixes = {".md", ".txt", ".pdf"}
     search_roots = [
         base_dir / "manuals",
@@ -137,7 +127,6 @@ def load_all_documents(base_dir: Path) -> list[Document]:
                 continue
             if file_path.suffix.lower() not in supported_suffixes:
                 continue
-            # 숨김 파일 / 임시 파일 무시
             if file_path.name.startswith(".") or file_path.name.startswith("~"):
                 continue
 

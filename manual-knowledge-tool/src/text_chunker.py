@@ -16,11 +16,9 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
-# 기본 청킹 파라미터 (search_rules.yaml 로 재정의 가능)
 DEFAULT_MIN_CHUNK = 20
 DEFAULT_MAX_CHUNK = 800
 
-# 문장 구분 패턴 (마침표/느낌표/물음표 + 공백 또는 줄바꿈)
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?。])\s+")
 
 
@@ -28,18 +26,16 @@ _SENTENCE_SPLIT = re.compile(r"(?<=[.!?。])\s+")
 class Chunk:
     """단일 검색 단위(문단/단락)를 나타낸다."""
     text: str
-    chunk_index: int          # 문서 내 순번 (0-based)
-    page_number: Optional[int] = None  # PDF인 경우 페이지 번호
+    chunk_index: int
+    page_number: Optional[int] = None
     source_info: dict = field(default_factory=dict)
 
     @property
     def preview(self) -> str:
-        """앞 80자 미리보기"""
         return self.text[:80].replace("\n", " ")
 
 
 def _split_into_sentences(text: str) -> list[str]:
-    """문장 단위로 분할한다."""
     parts = _SENTENCE_SPLIT.split(text.strip())
     return [p.strip() for p in parts if p.strip()]
 
@@ -49,10 +45,6 @@ def _merge_short_chunks(
     min_len: int,
     max_len: int,
 ) -> list[str]:
-    """
-    너무 짧은 청크를 앞 청크에 병합하고,
-    너무 긴 청크는 문장 단위로 재분할한다.
-    """
     result: list[str] = []
 
     for raw in raw_chunks:
@@ -61,7 +53,6 @@ def _merge_short_chunks(
             continue
 
         if len(raw) > max_len:
-            # 긴 청크: 문장 단위 재분할
             sentences = _split_into_sentences(raw)
             current = ""
             for sent in sentences:
@@ -74,7 +65,6 @@ def _merge_short_chunks(
             if current:
                 result.append(current)
         elif len(raw) < min_len:
-            # 짧은 청크: 이전 청크에 병합
             if result:
                 result[-1] = result[-1] + "\n" + raw
             else:
@@ -92,24 +82,10 @@ def chunk_text(
     min_chunk: int = DEFAULT_MIN_CHUNK,
     max_chunk: int = DEFAULT_MAX_CHUNK,
 ) -> list[Chunk]:
-    """
-    텍스트를 청크 목록으로 분할한다.
-
-    Parameters
-    ----------
-    text        : 원본 텍스트
-    source_info : 파일 경로 등 출처 정보 (검색 결과 표시용)
-    page_number : PDF 페이지 번호 (없으면 None)
-    min_chunk   : 최소 청크 길이
-    max_chunk   : 최대 청크 길이
-    """
     if not text or not text.strip():
         return []
 
-    # 이중 개행으로 1차 분할
     raw_paragraphs = re.split(r"\n\s*\n", text)
-
-    # 길이 조정 (짧은 병합, 긴 재분할)
     paragraphs = _merge_short_chunks(raw_paragraphs, min_chunk, max_chunk)
 
     chunks: list[Chunk] = []
