@@ -19,6 +19,28 @@ _MIN_PAGE_TEXT = 30
 _PDF_TIMEOUT   = 20  # seconds per PDF file
 
 
+def _extract_with_pdfium(file_path: Path) -> list[tuple[int, str]]:
+    """PDFium으로 대형 PDF도 빠르게 페이지별 텍스트를 추출한다."""
+    import pypdfium2 as pdfium  # type: ignore
+
+    pages: list[tuple[int, str]] = []
+    document = pdfium.PdfDocument(str(file_path))
+    try:
+        for i in range(len(document)):
+            page = document[i]
+            text_page = page.get_textpage()
+            try:
+                text = (text_page.get_text_range() or "").strip()
+            finally:
+                text_page.close()
+                page.close()
+            if len(text) >= _MIN_PAGE_TEXT:
+                pages.append((i + 1, text))
+    finally:
+        document.close()
+    return pages
+
+
 def _extract_with_pdfplumber(file_path: Path) -> list[tuple[int, str]]:
     import pdfplumber  # type: ignore
 
@@ -57,6 +79,18 @@ def _run_with_timeout(fn, file_path: Path, timeout: int) -> list[tuple[int, str]
 
 
 def extract_pdf_text(file_path: Path) -> list[tuple[int, str]]:
+    # ── PDFium 우선: 800쪽 이상 대형 매뉴얼도 빠르게 처리 ───────────────
+    try:
+        result = _run_with_timeout(_extract_with_pdfium, file_path, _PDF_TIMEOUT)
+        if result is not None:
+            return result
+        logger.warning("PDFium 타임아웃(%ds), pdfplumber 시도: %s", _PDF_TIMEOUT, file_path.name)
+        print(f"  [경고] PDFium 처리 지연, pdfplumber로 재시도: {file_path.name}")
+    except ImportError:
+        logger.debug("pypdfium2 없음, pdfplumber 시도")
+    except Exception as e:
+        logger.warning("PDFium 추출 실패 (%s): %s", file_path.name, e)
+
     # ── pdfplumber (타임아웃 적용) ──────────────────────────────────
     # ── pdfplumber (타임아웃 적용) ──────────────────────────────────────
     try:

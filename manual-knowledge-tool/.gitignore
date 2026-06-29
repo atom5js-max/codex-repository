@@ -1,6 +1,7 @@
 # 생성 파일 (검색 실행 시 자동 생성)
 output/.doc_cache.json
 output/search_result.md
+output/*.log
 
 # Python 캐시
 __pycache__/

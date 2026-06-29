@@ -157,12 +157,8 @@ def search_documents(
     expanded_weight: float = 0.7,
 ) -> list[SearchResult]:
     results: list[SearchResult] = []
-    file_counts: dict[str, int] = {}
 
     for doc in documents:
-        file_key = str(doc.file_path)
-        file_counts.setdefault(file_key, 0)
-
         for chunk in doc.chunks:
             if not chunk.text.strip():
                 continue
@@ -202,10 +198,6 @@ def search_documents(
 
             score += _filename_bonus(doc.file_path, expanded_query.original_terms)
 
-            if file_counts[file_key] >= max_per_file:
-                continue
-            file_counts[file_key] += 1
-
             first_term = matched_terms[0].term
             chunk.source_info["context_excerpt"] = _extract_context(
                 chunk.text, first_term, context_chars
@@ -221,4 +213,16 @@ def search_documents(
             )
 
     results.sort(key=lambda r: r.score, reverse=True)
-    return results[:max_results]
+
+    limited_results: list[SearchResult] = []
+    file_counts: dict[str, int] = {}
+    for result in results:
+        file_key = str(result.document.file_path)
+        if file_counts.get(file_key, 0) >= max_per_file:
+            continue
+        file_counts[file_key] = file_counts.get(file_key, 0) + 1
+        limited_results.append(result)
+        if len(limited_results) >= max_results:
+            break
+
+    return limited_results

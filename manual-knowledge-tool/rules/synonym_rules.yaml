@@ -373,6 +373,29 @@ inverter_accel_problem:
     - 자동 튜닝(Auto-tuning) 실행 여부 검토
     - 부하 특성(관성, 마찰) 확인
 
+inverter_auto_tuning:
+  field_terms:
+    - 자동튜닝
+    - 자동 튜닝
+    - 오토튜닝
+    - 오토 튜닝
+    - auto tuning
+    - auto-tuning
+    - 모터 튜닝
+  manual_terms:
+    - 자동 튜닝
+    - Auto Tuning
+    - Auto-tuning
+    - BAS-20
+    - Motor Parameter
+    - 전동기 제정수
+  check_items:
+    - 전동기 명판의 정격 전압·정격 전류·정격 주파수·정격 회전수 입력값 확인
+    - 자동 튜닝 전 전동기와 부하의 분리 가능 여부 및 회전 안전성 확인
+    - BAS-20(Auto Tuning) 설정값과 튜닝 방식 확인
+    - 튜닝 중 비상정지 및 출력 차단 조건 확인
+    - 자동 튜닝 완료 후 측정된 전동기 제정수와 운전 전류 확인
+
 hmi_comm_problem:
   field_terms:
     - HMI 통신 안 됨

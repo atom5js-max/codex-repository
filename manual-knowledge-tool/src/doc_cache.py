@@ -12,7 +12,7 @@ from text_chunker import Chunk
 
 logger = logging.getLogger(__name__)
 
-_CACHE_VERSION = 2
+_CACHE_VERSION = 3
 _DEFAULT_CACHE_FILE = ".doc_cache.json"
 
 
